@@ -217,7 +217,7 @@ bsd_socket(cyg_nstab_entry *nste, int domain, int type,
     int error = 0;
     struct socket *so;
 
-    error = socreate(domain, &so, type, protocol, (struct proc *)&proc0);
+    error = socreate(domain, &so, type, protocol, proc0);
 
     if( error == ENOERR)
     {
@@ -246,8 +246,9 @@ static int
 bsd_bind(cyg_file *fp, const sockaddr *sa, socklen_t len)
 {
     int error;
-
-    error = sobind((struct socket *)fp->f_data, (sockaddr *)sa, 0);
+    sockaddr sa1=*sa;
+    
+    error = sobind((struct socket *)fp->f_data, (sockaddr *)&sa1, 0);
     return error;
 }
 
@@ -257,14 +258,17 @@ static int
 bsd_connect(cyg_file *fp, const sockaddr *sa, socklen_t len)
 {
     struct socket *so;
+    sockaddr sa1=*sa;
+    
     int error, s;
 
+    sa1.sa_len = len;
     so = (struct socket *)fp->f_data;
 
     if ((so->so_state & SS_NBIO) && (so->so_state & SS_ISCONNECTING))
         return (EALREADY);
 
-    error = soconnect(so, (struct sockaddr *)sa, 0);
+    error = soconnect(so, (struct sockaddr *)&sa1, 0);
     if (error)
         goto bad;
 
@@ -387,9 +391,11 @@ bsd_accept(cyg_file *fp, cyg_file *new_fp,
     new_fp->f_data      = (CYG_ADDRWORD)so;
     new_fp->f_xops      = (CYG_ADDRWORD)&bsd_sockops;
     
-    sa = 0;
+    sa = NULL;
     error = soaccept(so, &sa);
     if (error) {
+        /* If the socket cannot be accepted, then it must be closed and freed */ 
+        soclose(so);
         /*
          * return a namelen of zero for older code which might
          * ignore the return value from accept.
@@ -445,13 +451,13 @@ done:
     m_freem(nam);
 #else
  done:
-#endif
     splx(s);
-    
+
     /* Bug of BSD TCP/IP stack on eCos v2.0: memory leak */
     if (sa) {
         FREE(sa, M_SONAME);
     }
+#endif
     
     return (error);
 }

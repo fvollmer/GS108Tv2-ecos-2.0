@@ -3014,7 +3014,7 @@ The CDL file finishes off with some build options.
         &lt;PREFIX&gt;/lib/target.ld: &lt;PACKAGE&gt;/src/mips_vr4300.ld
         $(CC) -E -P -Wp,-MD,target.tmp -DEXTRAS=1 -xc $(INCLUDE_PATH) $(CFLAGS) -o $@ $&lt;
         @echo $@ ": \\" &gt; $(notdir $@).deps
-        @tail -n +2 target.tmp &gt;&gt; $(notdir $@).deps
+        @tail +2 target.tmp &gt;&gt; $(notdir $@).deps
         @echo &gt;&gt; $(notdir $@).deps
         @rm target.tmp
     }
@@ -3860,7 +3860,7 @@ boilerplate code that can be copied and edited.
         &lt;PREFIX&gt;/lib/vectors.o : &lt;PACKAGE&gt;/src/vectors.S
         $(CC) -Wp,-MD,vectors.tmp $(INCLUDE_PATH) $(CFLAGS) -c -o $@ $&lt;
         @echo $@ ": \\" &gt; $(notdir $@).deps
-        @tail -n +2 vectors.tmp &gt;&gt; $(notdir $@).deps
+        @tail +2 vectors.tmp &gt;&gt; $(notdir $@).deps
         @echo &gt;&gt; $(notdir $@).deps
         @rm vectors.tmp
     }
@@ -3869,7 +3869,7 @@ boilerplate code that can be copied and edited.
         &lt;PREFIX&gt;/lib/target.ld: &lt;PACKAGE&gt;/src/i386.ld
         $(CC) -E -P -Wp,-MD,target.tmp -DEXTRAS=1 -xc $(INCLUDE_PATH) $(CFLAGS) -o $@ $&lt;
         @echo $@ ": \\" &gt; $(notdir $@).deps
-        @tail -n +2 target.tmp &gt;&gt; $(notdir $@).deps
+        @tail +2 target.tmp &gt;&gt; $(notdir $@).deps
         @echo &gt;&gt; $(notdir $@).deps
         @rm target.tmp
     }

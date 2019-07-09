@@ -271,9 +271,11 @@ m_clalloc_wait(void)
 	int s;
 
 	/* Sleep until something's available or until we expire. */
+	s = splimp();
 	m_clalloc_wid++;
 	if ((tsleep(&m_clalloc_wid, PVM, "mclalc", mbuf_wait)) == EWOULDBLOCK)
 		m_clalloc_wid--;
+	splx(s);
 
 	/*
 	 * Now that we (think) that we've got something, we will redo and
@@ -284,7 +286,7 @@ m_clalloc_wait(void)
 
 	s = splimp();
 	if (p != NULL) {	/* We waited and got something... */
-		mbstat.m_wait++;
+		mbstat.mc_wait++;
 		/* Wake up another if we have more free. */
 		if (mclfree != NULL)
 			MCLWAKEUP();
@@ -328,7 +330,7 @@ m_retry(i, t)
 #define m_mballoc_wait cyg_m_mballoc_wait
 
 	if (m != NULL)
-		mbstat.m_wait++;
+		mbstat.mr_wait++;
 	else
 		mbstat.m_drops++;
 
@@ -363,7 +365,7 @@ m_retryhdr(i, t)
 #define m_mballoc_wait cyg_m_mballoc_wait
 
 	if (m != NULL)  
-		mbstat.m_wait++;
+		mbstat.mrh_wait++;
 	else    
 		mbstat.m_drops++;
 	

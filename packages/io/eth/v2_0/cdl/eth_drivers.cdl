@@ -64,6 +64,7 @@ cdl_package CYGPKG_IO_ETH_DRIVERS {
           This interface defines whether or not a driver can handle
           requests for multicast addressing."
     }
+    implements    CYGINT_IO_ETH_MULTICAST
 
     cdl_component CYGDBG_IO_ETH_DRIVERS_DEBUG {
         display          "Support printing driver debug information"

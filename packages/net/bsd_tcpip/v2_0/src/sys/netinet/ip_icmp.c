@@ -206,13 +206,12 @@ icmp_error(n, type, code, dest, destifp)
 	 * in front of icmp message.
 	 */
 	if (m->m_data - sizeof(struct ip) < m->m_pktdat)
-   {
+  {
     diag_printf("error: icmp len!\n");
-		m_free(m);
-		goto freeit;
-	  /*	panic("icmp len"); */
-
-   }
+    m_free(m);
+    goto freeit;
+    /*  panic("icmp len"); */
+  }		
 	m->m_data -= sizeof(struct ip);
 	m->m_len += sizeof(struct ip);
 	m->m_pkthdr.len = m->m_len;

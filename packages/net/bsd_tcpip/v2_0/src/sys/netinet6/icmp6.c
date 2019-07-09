@@ -567,9 +567,11 @@ icmp6_input(mp, offp, proto)
 	code = icmp6->icmp6_code;
 
 	if ((sum = in6_cksum(m, IPPROTO_ICMPV6, off, icmp6len)) != 0) {
+#ifndef BRCM_CHANGES
 		nd6log((LOG_ERR,
 		    "ICMP6 checksum error(%d|%x) %s\n",
 		    icmp6->icmp6_type, sum, ip6_sprintf(&ip6->ip6_src)));
+#endif
 		icmp6stat.icp6s_checksum++;
 		icmp6_ifstat_inc(m->m_pkthdr.rcvif, ifs6_in_error);
 		goto freeit;
@@ -2577,16 +2579,29 @@ icmp6_redirect_input(m, off)
 
 	/* validation */
 	if (!IN6_IS_ADDR_LINKLOCAL(&src6)) {
+#ifndef BRCM_CHANGES
 		nd6log((LOG_ERR,
 			"ICMP6 redirect sent from %s rejected; "
 			"must be from linklocal\n", ip6_sprintf(&src6)));
+#else 
+                nd6log((LOG_DEBUG,
+                        "ICMP6 redirect sent from %s rejected; "
+                        "must be from linklocal\n", ip6_sprintf(&src6)));
+#endif
 		goto bad;
 	}
 	if (ip6->ip6_hlim != 255) {
+#ifndef BRCM_CHANGES
 		nd6log((LOG_ERR,
 			"ICMP6 redirect sent from %s rejected; "
 			"hlim=%d (must be 255)\n",
 			ip6_sprintf(&src6), ip6->ip6_hlim));
+#else 
+                nd6log((LOG_DEBUG,
+                        "ICMP6 redirect sent from %s rejected; "
+                        "hlim=%d (must be 255)\n",
+                        ip6_sprintf(&src6), ip6->ip6_hlim));
+#endif
 		goto bad;
 	}
     {
@@ -2606,40 +2621,71 @@ icmp6_redirect_input(m, off)
 	if (rt) {
 		if (rt->rt_gateway == NULL ||
 		    rt->rt_gateway->sa_family != AF_INET6) {
+#ifndef BRCM_CHANGES
 			nd6log((LOG_ERR,
 			    "ICMP6 redirect rejected; no route "
 			    "with inet6 gateway found for redirect dst: %s\n",
 			    icmp6_redirect_diag(&src6, &reddst6, &redtgt6)));
+#else
+                        nd6log((LOG_DEBUG,
+                            "ICMP6 redirect rejected; no route "
+                            "with inet6 gateway found for redirect dst: %s\n",
+                            icmp6_redirect_diag(&src6, &reddst6, &redtgt6)));
+#endif
 			RTFREE(rt);
 			goto bad;
 		}
 
 		gw6 = &(((struct sockaddr_in6 *)rt->rt_gateway)->sin6_addr);
 		if (bcmp(&src6, gw6, sizeof(struct in6_addr)) != 0) {
+#ifndef BRCM_CHANGES
 			nd6log((LOG_ERR,
 				"ICMP6 redirect rejected; "
 				"not equal to gw-for-src=%s (must be same): "
 				"%s\n",
 				ip6_sprintf(gw6),
 				icmp6_redirect_diag(&src6, &reddst6, &redtgt6)));
+#else 
+                        nd6log((LOG_DEBUG,
+                                "ICMP6 redirect rejected; "
+                                "not equal to gw-for-src=%s (must be same): "
+                                "%s\n",
+                                ip6_sprintf(gw6),
+                                icmp6_redirect_diag(&src6, &reddst6, &redtgt6)));
+#endif
 			RTFREE(rt);
 			goto bad;
 		}
 	} else {
+#ifndef BRCM_CHANGES
 		nd6log((LOG_ERR,
 			"ICMP6 redirect rejected; "
 			"no route found for redirect dst: %s\n",
 			icmp6_redirect_diag(&src6, &reddst6, &redtgt6)));
+#else 
+                  nd6log((LOG_DEBUG,
+                        "ICMP6 redirect rejected; "
+                        "no route found for redirect dst: %s\n",
+                        icmp6_redirect_diag(&src6, &reddst6, &redtgt6)));
+
+#endif
 		goto bad;
 	}
 	RTFREE(rt);
 	rt = NULL;
     }
 	if (IN6_IS_ADDR_MULTICAST(&reddst6)) {
+#ifndef BRCM_CHANGES
 		nd6log((LOG_ERR,
 			"ICMP6 redirect rejected; "
 			"redirect dst must be unicast: %s\n",
 			icmp6_redirect_diag(&src6, &reddst6, &redtgt6)));
+#else
+                 nd6log((LOG_DEBUG,
+                        "ICMP6 redirect rejected; "
+                        "redirect dst must be unicast: %s\n",
+                        icmp6_redirect_diag(&src6, &reddst6, &redtgt6)));
+#endif
 		goto bad;
 	}
 
@@ -2649,10 +2695,17 @@ icmp6_redirect_input(m, off)
 	if (bcmp(&redtgt6, &reddst6, sizeof(redtgt6)) == 0)
 		is_onlink = 1;	/* on-link destination case */
 	if (!is_router && !is_onlink) {
+#ifndef BRCM_CHANGES
 		nd6log((LOG_ERR,
 			"ICMP6 redirect rejected; "
 			"neither router case nor onlink case: %s\n",
 			icmp6_redirect_diag(&src6, &reddst6, &redtgt6)));
+#else
+                 nd6log((LOG_DEBUG,
+                        "ICMP6 redirect rejected; "
+                        "redirect dst must be unicast: %s\n",
+                        icmp6_redirect_diag(&src6, &reddst6, &redtgt6)));
+#endif
 		goto bad;
 	}
 	/* validation passed */

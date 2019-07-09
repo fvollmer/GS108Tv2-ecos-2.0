@@ -165,6 +165,12 @@ struct in6_addrpolicy {
 	int label;		/* matching label */
 	u_quad_t use;		/* statistics */
 };
+#ifdef BRCM_CHANGES
+struct  in6_mode {
+        char    if_name[IFNAMSIZ];
+        char in6_mode;
+};
+#endif
 
 /*
  * IPv6 interface statistics, as defined in RFC2465 Ipv6IfStatsEntry (p12).
@@ -478,6 +484,19 @@ struct	in6_rrenumreq {
 
 #define SIOCAADDRCTL_POLICY	_IOW('u', 108, struct in6_addrpolicy)
 #define SIOCDADDRCTL_POLICY	_IOW('u', 109, struct in6_addrpolicy)
+
+#ifdef BRCM_CHANGES
+
+#define SIOCSAUTOCFG_IN6           _IOW('i', 110, struct in6_mode) /* set the Route Advertise Accept mode */
+#define SIOCGAUTOCFG_IN6           _IOW('i', 111, struct in6_mode) /* Get the Route Advertise Accept mode */
+#define SIOCSMODE_IN6           _IOW('i', 112, struct in6_mode) /* Sets the IPv6 Mode */
+#define SIOCGMODE_IN6           _IOW('i', 113, struct in6_mode) /* Gets the IPv6 Mode */
+#define SIOCANBRINFO_IN6        _IOW('i', 114, struct in6_ndpcacheentry)/* Adds the static neighbor entry  */
+#define SIOCDNBRINFO_IN6        _IOW('i', 115, struct in6_ndpcacheentry)/* Deletes the specified static neighbor entry */
+#define SIOCGNBRCACHEINFO_IN6   _IOW('i', 116, struct in6_ndpcacheinfo)/* Deletes the specified static neighbor entry */
+#define SIOCNDPFLUSH_IN6         _IOW('i', 117, struct in6_ndpcacheinfo)/* Flushes all the cached entries entries */
+
+#endif
 
 #define IN6_IFF_ANYCAST		0x01	/* anycast address */
 #define IN6_IFF_TENTATIVE	0x02	/* tentative address */

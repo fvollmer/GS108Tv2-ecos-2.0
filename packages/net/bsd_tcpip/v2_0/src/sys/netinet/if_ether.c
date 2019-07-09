@@ -409,6 +409,17 @@ arpresolve(ac, rt, m, dst, desten, rt0)
 	 */
 	if (ac->ac_if.if_flags & IFF_NOARP)
 		return (0);
+#ifdef BRCM_CHANGES
+/*
+ * On routing interfaces Stack need not resolve the ARP.
+ * S/W forwarding code will take care of this.
+ */
+        if (strncmp(ac->ac_if.if_name, "rt1_",4)==0)
+        {
+         (void)memset(desten, 0, sizeof(etherbroadcastaddr));
+		return 1;
+        }
+#endif
 	/*
 	 * There is an arptab entry, but no ethernet address
 	 * response yet.  Replace the held mbuf with this
@@ -815,3 +826,62 @@ arp_ifinit(ac, ifa)
 	ifa->ifa_rtrequest = arp_rtrequest;
 	ifa->ifa_flags |= RTF_CLONING;
 }
+
+#ifdef L7_ARP_TRAVERSE_FLUSH_APIS
+int arp_nextget(ip, phwa, expire)
+          struct in_addr *ip;   /* IP address to test */
+                  char phwa[];  
+                          u_long *expire;
+{
+   int s = splnet();
+   register struct llinfo_arp *la = llinfo_arp.lh_first;
+   struct llinfo_arp *ola;
+   struct in_addr dest;
+   int found = 0;
+   
+   while ((ola = la) != 0) {
+     register struct rtentry *rt = la->la_rt;
+     struct sockaddr *gate = rt->rt_gateway;
+     if (rt==0)
+     {
+        break;
+     }
+     dest.s_addr = 0;
+     dest.s_addr = SIN(rt_key(rt))->sin_addr.s_addr;
+     if (dest.s_addr == ip->s_addr){
+       found = 1;
+       la = la->la_le.le_next;
+       continue;
+     }
+     if ((found == 1) || (ip->s_addr==0)){
+       Bcopy((u_char *)LLADDR(SDL(gate)), phwa, 6);
+       ip->s_addr = dest.s_addr;
+       *expire = rt->rt_expire;
+       splx(s);
+       return (0);
+     }
+     la = la->la_le.le_next;
+   }
+   splx(s);
+   return (-1);
+}
+
+void arpflush(ignored_arg)
+          void *ignored_arg;
+{
+   int s = splnet();
+   register struct llinfo_arp *la = llinfo_arp.lh_first;
+   
+   while ((la) != 0) {
+     register struct rtentry *rt = la->la_rt;
+     if (rt==0){
+       break;
+     }
+     la = la->la_le.le_next;
+     rtrequest(RTM_DELETE, rt_key(rt), (struct sockaddr *)0, rt_mask(rt),
+               0, (struct rtentry **)0);                
+   }
+   splx(s);
+   return;
+}
+#endif

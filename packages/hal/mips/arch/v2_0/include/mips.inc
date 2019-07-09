@@ -58,6 +58,21 @@
 ##
 ##=============================================================================
 
+/* TODO: TRACE utilities; should be removed before release */
+#define JATRACE_REG1_ADDR   0xa1003000
+#define JATRACE_REG2_ADDR   0xa1003004
+#define JATRACE_LV(l,v)                     \
+        li      v, JATRACE_SRC         ;    \
+        li      l, JATRACE_REG1_ADDR   ;    \
+        sw      v, 0(l)                ;    \
+        li      v, __LINE__            ;    \
+        li      l, JATRACE_REG2_ADDR   ;    \
+        sw      v, 0(l)
+#define JATRACE()   JATRACE_LV(k1,k0)
+
+/* TO DEFINE: JATRACE_SRC at the beginning of a file */
+#define JA_ATOI(a, b, c, d) (((a)<<24)|((b)<<16)|((c)<<8)|(d))
+
 ##-----------------------------------------------------------------------------
 ## Standard MIPS register names:
 

@@ -136,7 +136,7 @@ sb_attach(uint devid, void *osh, void *regs, uint bustype, void *sdh, char **var
 	sb_info_t *si;
 
 	/* alloc sb_info_t */
-	if ((si = MALLOC(sizeof (sb_info_t))) == NULL) {
+	if ((si = (sb_info_t *)MALLOC(sizeof (sb_info_t))) == NULL) {
 		SB_ERROR(("sb_attach: malloc failed!\n"));
 		return (NULL);
 	}

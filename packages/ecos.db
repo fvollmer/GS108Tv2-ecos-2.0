@@ -4583,9 +4583,102 @@ target bcm953710 {
            eCos on a BCM953710 board with a BCM47xx mips processor."
 }
 
-package CYGPKG_IO_PIPELIB {
-    alias        { "Pipe Driver Library"}
-    directory    io/pipe
-    script       pipelib.cdl
-    description  "This package contains a device driver for pipes."
+package CYGPKG_DEVS_FLASH_MIPS_BCM953000 {
+    alias     { "Support for flash memory BCM953000 board" flash_bcm953000 }
+    directory	devs/flash/mips/bcm953000
+    script		  flash_mips_bcm953000.cdl
+    hardware
+    description "
+        This package contains hardware support for flash memory
+        on the BCM953000 platform."
+}
+
+package CYGPKG_DEVS_FLASH_MIPS_BCM953000_BE {
+    alias     { "Support for flash memory BCM953000 board bigendian" flash_bcm953000_be }
+    directory	devs/flash/mips/bcm953000
+    script		  flash_mips_bcm953000_be.cdl
+    hardware
+    description "
+        This package contains hardware support for flash memory
+        on the BCM953000 platform."
+}
+
+package CYGPKG_IO_SERIAL_MIPS_BCM953000 {
+    alias     { "BCM953000 serial device drivers"
+              devs_serial_mips_bmc953000 bmc953000_serial_driver }
+    hardware
+    directory	devs/serial/mips/bcm953000
+    script	   ser_mips_bcm953000.cdl	
+    description  "BMC94xx serial device drivers"
+}
+
+package CYGPKG_IO_SERIAL_MIPS_BCM953000_BE {
+    alias     { "BCM953000 serial device drivers bigendian"
+              devs_serial_mips_bmc953000_be bmc953000_serial_driver_be }
+    hardware
+    directory	devs/serial/mips/bcm953000
+    script	   ser_mips_bcm953000_be.cdl	
+    description  "BMC94xx serial device drivers"
+}
+
+package CYGPKG_DEVS_ETH_BCM953000_ET {
+    alias     { "Broadcom 953000 ethernet driver"
+               devs_eth_bcm953000_et bcm953000_et_eth_driver }
+    hardware
+    directory	   devs/eth/mips/bcm953000/et
+    script		     mips_bcm953000_et_drivers.cdl
+    description  "Ethernet driver for BCM953000 ET."
+}
+
+package CYGPKG_DEVS_ETH_BCM953000_ET_BE {
+    alias     { "Broadcom 953000 ethernet driver bigendian"
+               devs_eth_bcm953000_et_be bcm953000_et_eth_driver_be }
+    hardware
+    directory	   devs/eth/mips/bcm953000/et
+    script		     mips_bcm953000_et_drivers_be.cdl
+    description  "Ethernet driver for BCM953000 ET."
+}
+
+package CYGPKG_HAL_MIPS_BCM53000 {
+    alias    { "MIPS BCM53000 variant HAL"
+               hal_bcm53000 bcm53000_hal bcm53000_arch_hal }
+    directory	 hal/mips/bcm53000
+    script		   hal_mips_bcm53000.cdl
+    hardware
+    description "
+           The bcm53000 variant HAL package provides generic support
+           for platforms based on this variant. It is also necessary to
+           select a specific target platform HAL package."
+}
+
+package CYGPKG_HAL_MIPS_BCM53000_BE {
+    alias    { "MIPS BCM53000 variant HAL bigendian"
+               hal_bcm53000_be bcm53000_hal_be bcm53000_arch_hal_be }
+    directory	 hal/mips/bcm53000
+    script		   hal_mips_bcm53000_be.cdl
+    hardware
+    description "
+           The bcm53000 variant HAL package provides generic support
+           for platforms based on this variant. It is also necessary to
+           select a specific target platform HAL package."
+}
+
+package CYGPKG_HAL_MIPS_BCM953000 {
+    alias    { "BCM953000 reference platform" hal_bcm953000 bcm953000_hal }
+    directory	 hal/mips/bcm953000
+    script		hal_mips_bcm953000.cdl
+    hardware
+    description "
+           The BCM953000 HAL package should be used when targetting the
+           actual hardware. "
+}
+
+package CYGPKG_HAL_MIPS_BCM953000_BE {
+    alias    { "BCM953000 reference platform bigendian" hal_bcm953000_be bcm953000_hal_be }
+    directory	 hal/mips/bcm953000
+    script		hal_mips_bcm953000_be.cdl
+    hardware
+    description "
+           The BCM953000 HAL package should be used when targetting the
+           actual hardware. "
 }

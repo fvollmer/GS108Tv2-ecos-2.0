@@ -61,7 +61,8 @@ flashAutoSelect(FLASH_TYPES *dev, FLASH_VENDORS *vendor)
     if (((*dev != FLASH_2L160) &&
          (*dev != FLASH_2L320) &&
          (*dev != FLASH_2L640) &&
-         (*dev != FLASH_2L800)) ||
+         (*dev != FLASH_2L800) &&
+         (*dev != FLASH_29GL128)) ||
         ((*vendor != AMD) && (*vendor != ALLIANCE) && *vendor != MXIC)) {
         *vendor = *dev = 0xFF;
     }

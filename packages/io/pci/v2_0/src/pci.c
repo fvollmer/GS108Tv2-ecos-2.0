@@ -66,14 +66,26 @@
 #include <cyg/infra/cyg_ass.h>
 
 static cyg_bool cyg_pci_lib_initialized = false;
+static cyg_uint8 cyg_pci_bus_start_secondary = 
+#ifdef HAL_PCI_SECONDARY_PORT_BUS_START
+    HAL_PCI_SECONDARY_PORT_BUS_START;
+#else 
+    CYG_PCI_MAX_BUS;
+#endif
+
 
 void
 cyg_pci_init( void )
 {
     if (!cyg_pci_lib_initialized) {
 
-	cyg_pci_set_memory_base(HAL_PCI_ALLOC_BASE_MEMORY);
-	cyg_pci_set_io_base(HAL_PCI_ALLOC_BASE_IO);
+        cyg_pci_set_memory_base(HAL_PCI_ALLOC_BASE_MEMORY);
+        cyg_pci_set_io_base(HAL_PCI_ALLOC_BASE_IO);
+
+#ifdef HAL_PCI_SECONDARY_PORT_BUS_START
+        cyg_pci_set_memory_secondary(HAL_PCI_ALLOC_SECONDARY_MEMORY);
+        cyg_pci_set_io_secondary(HAL_PCI_ALLOC_SECONDARY_IO);
+#endif /* HAL_PCI_SECONDARY_PORT_BUS_START */
 
         // Initialize the PCI bus, preparing it for general access.
         cyg_pcihw_init();
@@ -592,6 +604,8 @@ cyg_pci_find_matching( cyg_pci_match_func *matchp,
 
 static CYG_PCI_ADDRESS64 cyg_pci_memory_base;
 static CYG_PCI_ADDRESS32 cyg_pci_io_base;
+static CYG_PCI_ADDRESS64 cyg_pci_memory_secondary;
+static CYG_PCI_ADDRESS32 cyg_pci_io_secondary;
 
 void
 cyg_pci_set_memory_base(CYG_PCI_ADDRESS64 base)
@@ -605,35 +619,63 @@ cyg_pci_set_io_base(CYG_PCI_ADDRESS32 base)
     cyg_pci_io_base = base;
 }
 
+void
+cyg_pci_set_memory_secondary(CYG_PCI_ADDRESS64 base)
+{
+    cyg_pci_memory_secondary = base;
+}
+
+void
+cyg_pci_set_io_secondary(CYG_PCI_ADDRESS32 base)
+{
+    cyg_pci_io_secondary = base;
+}
+
 cyg_bool
 cyg_pci_configure_device( cyg_pci_device *dev_info )
 {
     int bar;
     cyg_uint32 flags;
     cyg_bool ret = true;
+    cyg_uint8 bus;
+
+    if (dev_info == NULL) {
+        return false;
+    }
 
     // If device is already active, just return true as
     // cyg_pci_get_device_info has presumably filled in
     // the base_map already.
     if ((dev_info->command & CYG_PCI_CFG_COMMAND_ACTIVE) != 0)
-	return true;
+        return true;
 
+    bus = CYG_PCI_DEV_GET_BUS(dev_info->devid);
     if (dev_info->num_bars > 0) {
-	for (bar = 0; bar < dev_info->num_bars; bar++) {
-	    flags = dev_info->base_size[bar];
-
-	    ret = false;
-
-	    if ((flags & CYG_PCI_CFG_BAR_SPACE_MASK) == CYG_PCI_CFG_BAR_SPACE_MEM){
-		ret |= cyg_pci_allocate_memory(dev_info, bar, 
-					       &cyg_pci_memory_base);
-
-		// If this is a 64bit memory region, skip the next bar
-		// since it will contain the top 32 bits.
-		if (flags & CYG_PRI_CFG_BAR_MEM_TYPE_64)
-		    bar++;
-	    } else
-		ret |= cyg_pci_allocate_io(dev_info, bar, &cyg_pci_io_base);
+        for (bar = 0; bar < dev_info->num_bars; bar++) {
+            flags = dev_info->base_size[bar];
+    
+            ret = false;
+    
+            if ((flags & CYG_PCI_CFG_BAR_SPACE_MASK) == CYG_PCI_CFG_BAR_SPACE_MEM){
+                if (bus >= cyg_pci_bus_start_secondary) {
+                    ret |= cyg_pci_allocate_memory(dev_info, bar, 
+                               &cyg_pci_memory_secondary);
+                } else {
+                    ret |= cyg_pci_allocate_memory(dev_info, bar, 
+                               &cyg_pci_memory_base);
+                }
+    
+                // If this is a 64bit memory region, skip the next bar
+                // since it will contain the top 32 bits.
+                if (flags & CYG_PRI_CFG_BAR_MEM_TYPE_64)
+                    bar++;
+            } else {
+                if (bus >= cyg_pci_bus_start_secondary) {
+                    ret |= cyg_pci_allocate_io(dev_info, bar, &cyg_pci_io_secondary);
+                } else {
+                    ret |= cyg_pci_allocate_io(dev_info, bar, &cyg_pci_io_base);
+                }
+            }
 
 	    if (!ret)
 		return ret;

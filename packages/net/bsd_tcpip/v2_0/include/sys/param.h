@@ -726,7 +726,7 @@ extern int hz;
 extern volatile struct timeval ktime;
 #define time_second ktime.tv_sec
 extern int tick;
-extern int proc0;
+extern struct proc * proc0;
 #define curproc 0
 extern void microtime(struct timeval *tp);
 extern void getmicrotime(struct timeval *tp);
@@ -882,7 +882,8 @@ extern void ovbcopy(const void *s, void *d, size_t len);
 extern void get_mono_time(void);
 extern int arc4random(void);
 extern void get_random_bytes(void *buf, size_t len);
-extern void read_random_unlimited(void *buf, size_t len);
+extern void read_random(void *buf, size_t len);
+extern int read_random_unlimited(void *buf, size_t len);
 extern void *hashinit(int elements, void *type, u_long *hashmask);
 
 // Initialization support - cross between RedBoot & FreeBSD
@@ -896,7 +897,7 @@ struct init_tab_entry {
 #define _cat(a,b) a##b
 #define __Net_init(_p1_,_p2_,_f_,_d_)                                    \
 struct init_tab_entry _cat(_net_init_tab,_p1_##_p2_##_f_) \
-  CYG_HAL_TABLE_QUALIFIED_ENTRY(_Net_inits,_p1_##_p2_##_f_) = { _f_, _d_, #_f_ }; 
+  CYG_HAL_TABLE_QUALIFIED_ENTRY(_Net_inits,_p1_##_p2_##_f_) = { (_init_fun_ptr) _f_, _d_, #_f_ }; 
 #define _Net_init(_p1_,_p2_,_f_,_d_)                                    \
         __Net_init(_p1_,_p2_,_f_,_d_)                                    
 
@@ -984,7 +985,7 @@ if (cyg_net_log_mask & lvl)
 #else
 #define log(lvl, args...) 
 #define log_dump(lvl, buf, len)
-#define log_(lvl)
+#define log_(lvl) if (0)
 #endif
 
 #endif // _KERNEL

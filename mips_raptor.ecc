@@ -52,7 +52,6 @@ cdl_configuration eCos {
     package -template CYGPKG_NET v2_0 ;
     package -template CYGPKG_NET_FREEBSD_STACK v2_0 ;
     package -template CYGPKG_IO_ETH_DRIVERS v2_0 ;
-    package -template CYGPKG_IO_PIPELIB v2_0 ;
     package -hardware CYGPKG_HAL_MIPS v2_0 ;
     package -hardware CYGPKG_HAL_MIPS_BCM47xx v2_0 ;
     package -hardware CYGPKG_HAL_MIPS_BCM953710 v2_0 ;
@@ -61,7 +60,6 @@ cdl_configuration eCos {
     package -hardware CYGPKG_IO_FLASH v2_0 ;
     package -hardware CYGPKG_DEVS_FLASH_MIPS_BCM947xx v2_0 ;
     package CYGPKG_FS_RAM v2_0 ;
-    package CYGPKG_CRC v2_0 ;
 };
 
 # ---- conflicts -------------------------------------------------------
@@ -174,7 +172,7 @@ cdl_option CYGBLD_GLOBAL_COMMAND_PREFIX {
 #
 cdl_option CYGBLD_GLOBAL_CFLAGS {
     # Flavor: data
-    user_value "-mips32 -g -Wpointer-arith -Wstrict-prototypes -Winline -Wundef -Woverloaded-virtual -EB -O2 -g -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions -fvtable-gc -finit-priority -fno-builtin -G0 -DRAM_SIZE=0x4000000"
+    user_value "-mips32 -g -Wpointer-arith -Wstrict-prototypes -Winline -Wundef -Woverloaded-virtual -EB -O2 -g -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions -fvtable-gc -finit-priority -fno-builtin -G0 -DRAM_SIZE=0x2000000"
     # value_source user
     # Default value: "-mips32 -Wpointer-arith -Wstrict-prototypes -Winline -Wundef -Woverloaded-virtual -EB -O2 -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions -fvtable-gc -finit-priority -fno-builtin -G0"
 
@@ -1668,7 +1666,7 @@ cdl_option CYGPKG_HAL_MIPS_MSBFIRST {
 #
 cdl_option CYGHWR_HAL_MIPS_CPU_FREQ_ACTUAL {
     # Flavor: data
-    user_value 200000000
+    user_value 266000000
     # value_source user
     # Default value: 200000000
     # Legal values: 200000000 266000000
@@ -1805,10 +1803,10 @@ cdl_option CYGNUM_HAL_RTC_DENOMINATOR {
 #
 cdl_option CYGNUM_HAL_RTC_PERIOD {
     # Calculated value:  (CYGHWR_HAL_MIPS_CPU_FREQ_ACTUAL / 2) / CYGNUM_HAL_RTC_DENOMINATOR 
-    #     CYGHWR_HAL_MIPS_CPU_FREQ_ACTUAL == 200000000
+    #     CYGHWR_HAL_MIPS_CPU_FREQ_ACTUAL == 266000000
     #     CYGNUM_HAL_RTC_DENOMINATOR == 100
     # Flavor: data
-    # Current_value: 1000000
+    # Current_value: 1330000
 };
 
 # <
@@ -1936,8 +1934,6 @@ cdl_package CYGPKG_IO {
     #     Requires: CYGPKG_IO
     # package CYGPKG_NET_FREEBSD_STACK
     #     Requires: CYGPKG_IO
-    # package CYGPKG_IO_PIPELIB
-    #     ActiveIf: CYGPKG_IO
     # component CYGPKG_IO_FLASH_BLOCK_DEVICE
     #     ActiveIf: CYGPKG_IO
 };
@@ -2304,31 +2300,6 @@ cdl_option CYGPKG_IO_ETH_DRIVERS_CFLAGS_ADD {
 
 # <
 # <
-# Pipe Driver Library
-# This package provides a pipe driver library. 
-# Multiple pipe devices can be created and accessed
-# using this library.
-#
-cdl_package CYGPKG_IO_PIPELIB {
-    # Packages cannot be added or removed, nor can their version be changed,
-    # simply by editing their value. Instead the appropriate configuration
-    # should be used to perform these actions.
-
-    # ActiveIf constraint: CYGPKG_IO
-    #     CYGPKG_IO == v2_0
-    #   --> 1
-
-    # This value cannot be modified here.
-    # Flavor: booldata
-    # Current value: 1 v2_0
-    # Requires: CYGPKG_ERROR
-    #     CYGPKG_ERROR == v2_0
-    #   --> 1
-    # Requires: CYGINT_ISO_SELECT
-    #     CYGINT_ISO_SELECT == 1
-    #   --> 1
-};
-
 # <
 # Serial device drivers
 # doc: ref/io.html
@@ -4010,7 +3981,7 @@ cdl_option CYGBLD_INFRA_CFLAGS_WARNINGS_AS_ERRORS {
     # value_source default
     # Default value: 0
     # Requires:  is_substr(CYGBLD_GLOBAL_CFLAGS, " -Werror") 
-    #     CYGBLD_GLOBAL_CFLAGS == "-mips32 -g -Wpointer-arith -Wstrict-prototypes -Winline -Wundef -Woverloaded-virtual -EB -O2 -g -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions -fvtable-gc -finit-priority -fno-builtin -G0 -DRAM_SIZE=0x4000000"
+    #     CYGBLD_GLOBAL_CFLAGS == "-mips32 -g -Wpointer-arith -Wstrict-prototypes -Winline -Wundef -Woverloaded-virtual -EB -O2 -g -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions -fvtable-gc -finit-priority -fno-builtin -G0 -DRAM_SIZE=0x2000000"
     #   --> 0
 };
 
@@ -4027,7 +3998,7 @@ cdl_option CYGBLD_INFRA_CFLAGS_PIPE {
     # value_source default
     # Default value: 0
     # Requires:  is_substr(CYGBLD_GLOBAL_CFLAGS, " -pipe") 
-    #     CYGBLD_GLOBAL_CFLAGS == "-mips32 -g -Wpointer-arith -Wstrict-prototypes -Winline -Wundef -Woverloaded-virtual -EB -O2 -g -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions -fvtable-gc -finit-priority -fno-builtin -G0 -DRAM_SIZE=0x4000000"
+    #     CYGBLD_GLOBAL_CFLAGS == "-mips32 -g -Wpointer-arith -Wstrict-prototypes -Winline -Wundef -Woverloaded-virtual -EB -O2 -g -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions -fvtable-gc -finit-priority -fno-builtin -G0 -DRAM_SIZE=0x2000000"
     #   --> 0
 };
 
@@ -6550,8 +6521,6 @@ cdl_interface CYGINT_ISO_SELECT {
     # The following properties are affected by this value
     # interface CYGINT_ISO_SELECT
     #     Requires:  1 >= CYGINT_ISO_SELECT 
-    # package CYGPKG_IO_PIPELIB
-    #     Requires: CYGINT_ISO_SELECT
 };
 
 # select() implementation header
@@ -11134,8 +11103,9 @@ cdl_option CYGIMP_LIBC_STDIO_INLINES {
 #
 cdl_option FOPEN_MAX {
     # Flavor: data
-    user_value 16
-    # value_source user
+    # No user value, uncomment the following line to provide one.
+    # user_value 8
+    # value_source default
     # Default value: 8
     # Legal values: 3 to 0x7fffffff
 };
@@ -12085,8 +12055,9 @@ cdl_option CYGNUM_POSIX_PTHREAD_KEYS_MAX {
 #
 cdl_option CYGNUM_POSIX_PTHREAD_THREADS_MAX {
     # Flavor: data
-    user_value 128
-    # value_source user
+    # No user value, uncomment the following line to provide one.
+    # user_value 64
+    # value_source default
     # Default value: 64
     # Legal values: 64 to 1024
 };
@@ -12714,8 +12685,6 @@ cdl_package CYGPKG_ERROR {
     #     Requires: CYGPKG_ERROR
     # package CYGPKG_IO_FILEIO
     #     Requires: CYGPKG_ERROR
-    # package CYGPKG_IO_PIPELIB
-    #     Requires: CYGPKG_ERROR
     # package CYGPKG_IO_SERIAL_GENERIC_16X5X
     #     Requires: CYGPKG_ERROR
     # package CYGPKG_IO_SERIAL_MIPS_BCM947xx
@@ -12955,7 +12924,7 @@ cdl_option CYGPKG_IO_FILEIO_SOCKET_SUPPORT {
 #
 cdl_option CYGNUM_FILEIO_NFILE {
     # Flavor: data
-    user_value 80
+    user_value 32
     # value_source user
     # Default value: 16
     # Legal values: 1 to 9999999
@@ -12973,11 +12942,11 @@ cdl_option CYGNUM_FILEIO_NFILE {
 #
 cdl_option CYGNUM_FILEIO_NFD {
     # Flavor: data
-    user_value 80
+    user_value 32
     # value_source user
     # Default value: 16
     # Legal values: CYGNUM_FILEIO_NFILE to 9999999
-    #     CYGNUM_FILEIO_NFILE == 80
+    #     CYGNUM_FILEIO_NFILE == 32
 };
 
 # Maximum number of installed filesystems
@@ -14287,7 +14256,7 @@ cdl_option CYGPKG_NET_FREEBSD_LOGGING {
 #
 cdl_option CYGPKG_NET_MEM_USAGE {
     # Flavor: data
-    user_value 1048576
+    user_value 524288
     # value_source user
     # Default value: 262144
 };
@@ -14299,11 +14268,11 @@ cdl_option CYGPKG_NET_MEM_USAGE {
 cdl_option CYGPKG_NET_MAXSOCKETS {
     # Flavor: data
     # No user value, uncomment the following line to provide one.
-    # user_value 80
+    # user_value 32
     # value_source default
     # Default value: CYGNUM_FILEIO_NFILE
-    #     CYGNUM_FILEIO_NFILE == 80
-    #   --> 80
+    #     CYGNUM_FILEIO_NFILE == 32
+    #   --> 32
 };
 
 # Number of supported pending network events
@@ -14598,9 +14567,9 @@ cdl_component CYGDAT_IO_FLASH_BLOCK_DEVICE_NAME_1 {
 #
 cdl_option CYGNUM_IO_FLASH_BLOCK_OFFSET_1 {
     # Flavor: data
-    user_value 0x100000
+    user_value 0x140000
     # value_source user
-    # Default value: 0x00080000
+    # Default value: 0x00140000
 };
 
 # Length
@@ -14609,19 +14578,18 @@ cdl_option CYGNUM_IO_FLASH_BLOCK_OFFSET_1 {
 #
 cdl_option CYGNUM_IO_FLASH_BLOCK_LENGTH_1 {
     # Flavor: data
-    user_value 0x720000
+    user_value 0x340000
     # value_source user
-    # Default value: 0x001A0000
+    # Default value: 0x00340000
 };
 
 # <
-# Name of flash device 1 block device
+# Name of flash device 2 block device
 #
 cdl_component CYGDAT_IO_FLASH_BLOCK_DEVICE_NAME_2 {
     # Flavor: data
-    # No user value, uncomment the following line to provide one.
-    # user_value "\"/dev/flash2\""
-    # value_source default
+    user_value "\"/dev/flash2\""
+    # value_source user
     # Default value: "\"/dev/flash2\""
 };
 
@@ -14632,9 +14600,9 @@ cdl_component CYGDAT_IO_FLASH_BLOCK_DEVICE_NAME_2 {
 #
 cdl_option CYGNUM_IO_FLASH_BLOCK_OFFSET_2 {
     # Flavor: data
-    user_value 0x00820000
+    user_value 0x480000
     # value_source user
-    # Default value: 0x00220000
+    # Default value: 0x00480000
 };
 
 # Length
@@ -14643,20 +14611,20 @@ cdl_option CYGNUM_IO_FLASH_BLOCK_OFFSET_2 {
 #
 cdl_option CYGNUM_IO_FLASH_BLOCK_LENGTH_2 {
     # Flavor: data
-    user_value 0x00720000
+    user_value 0x340000
     # value_source user
-    # Default value: 0x001A0000
+    # Default value: 0x00340000
 };
 
 # <
-# Name of flash device 1 block device
+# Name of flash device 3 block device
 #
 cdl_component CYGDAT_IO_FLASH_BLOCK_DEVICE_NAME_3 {
     # Flavor: data
     # No user value, uncomment the following line to provide one.
-    # user_value "\"/dev/boot.dim\""
+    # user_value "\"/dev/loader1\""
     # value_source default
-    # Default value: "\"/dev/boot.dim\""
+    # Default value: "\"/dev/loader1\""
 };
 
 # >
@@ -14666,9 +14634,10 @@ cdl_component CYGDAT_IO_FLASH_BLOCK_DEVICE_NAME_3 {
 #
 cdl_option CYGNUM_IO_FLASH_BLOCK_OFFSET_3 {
     # Flavor: data
-    user_value 0x000C0000
-    # value_source user
-    # Default value: 0x00074000
+    # No user value, uncomment the following line to provide one.
+    # user_value 0x00030000
+    # value_source default
+    # Default value: 0x00030000
 };
 
 # Length
@@ -14677,20 +14646,20 @@ cdl_option CYGNUM_IO_FLASH_BLOCK_OFFSET_3 {
 #
 cdl_option CYGNUM_IO_FLASH_BLOCK_LENGTH_3 {
     # Flavor: data
-    user_value 0x00020000
-    # value_source user
-    # Default value: 0x00008000
+    # No user value, uncomment the following line to provide one.
+    # user_value 0x00040000
+    # value_source default
+    # Default value: 0x00040000
 };
 
-# <
 # Name of flash device 4 block device
 #
 cdl_component CYGDAT_IO_FLASH_BLOCK_DEVICE_NAME_4 {
     # Flavor: data
     # No user value, uncomment the following line to provide one.
-    # user_value "\"/dev/cfe\""
+    # user_value "\"/dev/loader2\""
     # value_source default
-    # Default value: "\"/dev/cfe\""
+    # Default value: "\"/dev/loader2\""
 };
 
 # >
@@ -14701,9 +14670,9 @@ cdl_component CYGDAT_IO_FLASH_BLOCK_DEVICE_NAME_4 {
 cdl_option CYGNUM_IO_FLASH_BLOCK_OFFSET_4 {
     # Flavor: data
     # No user value, uncomment the following line to provide one.
-    # user_value 0x0
+    # user_value 0x00070000
     # value_source default
-    # Default value: 0x0
+    # Default value: 0x00070000
 };
 
 # Length
@@ -14713,11 +14682,12 @@ cdl_option CYGNUM_IO_FLASH_BLOCK_OFFSET_4 {
 cdl_option CYGNUM_IO_FLASH_BLOCK_LENGTH_4 {
     # Flavor: data
     # No user value, uncomment the following line to provide one.
-    # user_value 0x00080000
+    # user_value 0x00040000
     # value_source default
-    # Default value: 0x00080000
+    # Default value: 0x00040000
 };
 
+# <
 # <
 # <
 # FLASH memory support for BCM947xx boards
@@ -14981,32 +14951,6 @@ cdl_option CYGPKG_FS_RAM_TESTS {
     # Calculated value:  "tests/fileio1.c" 
     # Flavor: data
     # Current_value: tests/fileio1.c
-};
-
-# <
-# Compute CRCs
-# doc: ref/services-crc.html
-# This package provides support for CRC calculation. Currently 
-# this is the POSIX 1003 defined CRC algorithm, a 32 CRC by 
-# Gary S. Brown, and a 16 bit CRC.
-#
-cdl_package CYGPKG_CRC {
-    # Packages cannot be added or removed, nor can their version be changed,
-    # simply by editing their value. Instead the appropriate configuration
-    # should be used to perform these actions.
-
-    # This value cannot be modified here.
-    # Flavor: booldata
-    # Current value: 1 v2_0
-};
-
-# >
-# POSIX CRC tests
-#
-cdl_option CYGPKG_CRC_TESTS {
-    # Calculated value:  "tests/crc_test" 
-    # Flavor: data
-    # Current_value: tests/crc_test
 };
 
 # <

@@ -26,7 +26,7 @@
     (*FLASH_ADDR(dev, addr))
 
 extern struct flash_drv_funcs_s flash29GLxxx;
-
+extern struct flash_drv_funcs_s flash29GL128;
 LOCAL void
 flashReadReset(void)
 {
@@ -60,7 +60,7 @@ flashAutoSelect(FLASH_TYPES *dev, FLASH_VENDORS *vendor)
                (int)*dev, (int)*vendor);
     flashReadReset();   
 
-    if ((*vendor != AMD) && (*vendor != ALLIANCE))
+    if ((*vendor != AMD) && (*vendor != ALLIANCE) && (*vendor != MXIC) && (*vendor != INTEL))
     {
         *vendor = *dev = 0xFF;
     }
@@ -236,4 +236,17 @@ struct flash_drv_funcs_s flash29GLxxx = {
     flashRead,
     flashWrite
 };
-
+struct flash_drv_funcs_s flash29GL128 = {
+    FLASH_29GL128,MXIC,
+    flashAutoSelect,
+    flashEraseSector,
+    flashRead,
+    flashWrite
+};
+struct flash_drv_funcs_s flash28f128m29ewh = {
+    FLASH_29GL128, INTEL,
+    flashAutoSelect,
+    flashEraseSector,
+    flashRead,
+    flashWrite
+};

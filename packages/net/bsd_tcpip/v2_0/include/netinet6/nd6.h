@@ -70,6 +70,9 @@ struct	llinfo_nd6 {
 	short	ln_state;	/* reachability state */
 	short	ln_router;	/* 2^0: ND6 router bit */
 	int	ln_byhint;	/* # of times we made it reachable by UL hint */
+#ifdef BRCM_CHANGES
+        u_long  last_update;
+#endif
 };
 
 #define ND6_LLINFO_NOSTATE	-2
@@ -214,6 +217,30 @@ struct	in6_ndifreq {
 	char ifname[IFNAMSIZ];
 	u_long ifindex;
 };
+
+#ifdef BRCM_CHANGES
+struct  in6_ndpcacheinfo {
+	char ifname[IFNAMSIZ];
+        struct in6_addr nbrAddr;
+        caddr_t rt_llinfo;
+        int lladdrlen;
+        short   ln_router;
+        u_long  ln_expire; 
+        u_long  ln_state; 
+        u_long  ln_last_update; 
+        u_long  rt_flags;
+        char match_flag;
+};
+struct  in6_ndpcacheentry {
+        char ifname[IFNAMSIZ];
+        struct in6_addr nbrAddr;
+        caddr_t rt_llinfo;
+        int lladdrlen;
+        short   ln_router;
+        u_long  ln_expire;
+        u_long  rt_flags;
+};
+#endif
 
 /* Prefix status */
 #define NDPRF_ONLINK		0x1

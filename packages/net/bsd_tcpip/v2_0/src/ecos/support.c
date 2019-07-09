@@ -89,7 +89,7 @@ int hz = 100;
 int tick = 10000;  // usec per "tick"
 volatile struct timeval ktime;
 int proc = 0;  // unused
-int proc0 = 0;  // unused
+struct proc * proc0 = 0;  // unused
 
 volatile struct timeval mono_time;
 
@@ -140,7 +140,6 @@ int nmbclusters = (NET_CLUSTERS_SIZE/MCLBYTES);
 static struct net_stats  stats_malloc, stats_free, 
     stats_memcpy, stats_memset,
     stats_mbuf_alloc, stats_mbuf_free, stats_cluster_alloc;
-extern struct net_stats stats_in_cksum;
 
 // Display a number of ticks as microseconds
 // Note: for improved calculation significance, values are kept in ticks*1000
@@ -186,7 +185,6 @@ show_net_times(void)
     show_net_stats(&stats_mbuf_alloc,    "Mbuf alloc");
     show_net_stats(&stats_mbuf_free,     "Mbuf free");
     show_net_stats(&stats_cluster_alloc, "Cluster alloc");
-    show_net_stats(&stats_in_cksum,      "Checksum");
     show_net_stats(&stats_memcpy,        "Net memcpy");
     show_net_stats(&stats_memset,        "Net memset");
 }
@@ -223,11 +221,16 @@ cyg_net_free(caddr_t addr, int type)
 void *
 cyg_net_mbuf_alloc(int type, int flags)
 {
-    void *res;    
+    void *res;
+    static int nonzero_flags =0;
 
     START_STATS();
     log(LOG_MDEBUG, "Alloc mbuf = ");
+
+    /* duplicate increment
     mbstat.m_mbufs++;
+    */
+
     if (flags & M_NOWAIT) {
         res = cyg_mempool_fix_try_alloc(net_mbufs);
     } else {
@@ -239,15 +242,6 @@ cyg_net_mbuf_alloc(int type, int flags)
     CYG_ASSERT( dtom((char *)res + MSIZE/2) == res, "dtom failed, mid mbuf" );
     log(LOG_MDEBUG, "%p\n", res);
     return (res);
-}
-
-void 
-cyg_net_mbuf_free(caddr_t addr, int type)
-{
-    START_STATS();
-    mbstat.m_mbufs--;
-    cyg_mempool_fix_free(net_mbufs, addr);
-    FINISH_STATS(stats_mbuf_free);
 }
 
 void *
@@ -370,20 +364,48 @@ void cyg_kmem_print_stats( void )
     struct vm_zone *zone;
 
     diag_printf( "Network stack mbuf stats:\n" );
-    diag_printf( "   mbufs %d, clusters %d, free clusters %d\n",
+
+    diag_printf( "   mbufs    %d, freelist %d, data %d, hdr %d\n"
+                 "   clusters %d, freelist %d\n",
                  mbstat.m_mbufs,	/* mbufs obtained from page pool */
+                 mbtypes[MT_FREE],     	/* mbufs in free list */
+                 mbtypes[MT_DATA],     	/* mbufs in free list */
+                 mbtypes[MT_HEADER],    	/* mbufs in free list */
                  mbstat.m_clusters,	/* clusters obtained from page pool */
                  /* mbstat.m_spare, */	/* spare field */
                  mbstat.m_clfree	/* free clusters */
         );
-    diag_printf( "   Failed to get %d times\n"
-                 "   Waited to get %d times\n"
-                 "   Drained queues to get %d times\n",
+    diag_printf( "   Failed to get %ld times\n"
+                 "   Waited to get mbuf %ld times\n"
+                 "   Waited to get cluster %ld times\n"
+                 "   Waited to get retry mbuf %ld times\n"
+                 "   Waited to get retry header %ld times\n"
+                 "   Drained queues to get %ld times\n"
+                 "   Failed to m_copym %ld times\n"
+                 "   Failed to m_pullup %ld times\n"
+                 "   spare field %ld\n",
                  mbstat.m_drops,	/* times failed to find space */
                  mbstat.m_wait, 	/* times waited for space */
-                 mbstat.m_drain         /* times drained protocols for space */
+                 mbstat.mc_wait, 	/* times waited for space */
+                 mbstat.mr_wait, 	/* times waited for space */
+                 mbstat.mrh_wait, 	/* times waited for space */
+                 mbstat.m_drain,         /* times drained protocols for space */
+                 mbstat.m_mcfail,       /* times m_copym failed */
+                 mbstat.m_mpfail,       /* times m_pullup failed */
+                 mbstat.m_spare       /* spare field */
                  /* mbstat.m_mtypes[256]; type specific mbuf allocations */
         );
+
+    diag_printf( "Buffer sizes details:\n"
+                 "   mbuf len %ld data %ld hrd %ld\n"
+                 "   cluster size %ld minsize %ld\n",
+                 mbstat.m_msize, /* length of an mbuf */
+                 mbstat.m_mlen,  /* length of data in an mbuf */
+                 mbstat.m_mhlen, /* length of data in a header mbuf */
+                 mbstat.m_mclbytes,  /* length of an mbuf cluster */
+                 mbstat.m_minclsize  /* min length of data to allocate a cluster */
+        );
+
 
     zone = vm_zones;
     while (zone) {
@@ -499,9 +521,17 @@ get_random_bytes(void *buf, size_t len)
     }
 }
 
-void
+int
 read_random_unlimited(void *buf, size_t len)
 {
+    get_random_bytes(buf, len);
+    return len;
+}
+
+void read_random(void *buf, size_t len) 
+{
+    CYG_ASSERT(0 == (len & ~3), "Only multiple of words allowed");
+  
     get_random_bytes(buf, len);
 }
 
@@ -509,7 +539,7 @@ void
 microtime(struct timeval *tp)
 {
     *tp = ktime;
-    log(LOG_DEBUG, "%s: = %d.%d\n", __FUNCTION__, tp->tv_sec, tp->tv_usec);
+    log(LOG_DEBUG, "%s: = %ld.%ld\n", __FUNCTION__, tp->tv_sec, tp->tv_usec);
     ktime.tv_usec++;  // In case clock isn't running yet
 }
 
@@ -517,7 +547,7 @@ void
 getmicrotime(struct timeval *tp)
 {
     *tp = ktime;
-    log(LOG_DEBUG, "%s: = %d.%d\n", __FUNCTION__, tp->tv_sec, tp->tv_usec);
+    log(LOG_DEBUG, "%s: = %ld.%ld\n", __FUNCTION__, tp->tv_sec, tp->tv_usec);
     ktime.tv_usec++;  // In case clock isn't running yet
 }
 
@@ -525,7 +555,7 @@ void
 getmicrouptime(struct timeval *tp)
 {
     *tp = ktime;
-    log(LOG_DEBUG, "%s: = %d.%d\n", __FUNCTION__, tp->tv_sec, tp->tv_usec);
+    log(LOG_DEBUG, "%s: = %ld.%ld\n", __FUNCTION__, tp->tv_sec, tp->tv_usec);
     ktime.tv_usec++;  // In case clock isn't running yet
 }
 
@@ -680,8 +710,8 @@ cyg_netint(cyg_addrword_t param)
         spl = splsoftnet(); // Prevent any overlapping "stack" processing
         for (lvl = NETISR_MIN;  lvl <= NETISR_MAX;  lvl++) {
             if (curisr & (1<<lvl)) {
-                CYG_ASSERT(_netisr_handlers[lvl] != 0, "unregistered netisr handler");
-                (*_netisr_handlers[lvl])();
+                if (NULL != _netisr_handlers[lvl])
+                    (*_netisr_handlers[lvl])();
             }
         }
         splx(spl);
@@ -865,6 +895,7 @@ _show_ifp(struct ifnet *ifp, pr_fun *pr)
     TAILQ_FOREACH(ifa, &ifp->if_addrlist, ifa_list) {
         if (ifa->ifa_addr->sa_family != AF_LINK) {
             getnameinfo (ifa->ifa_addr, ifa->ifa_addr->sa_len, addr, sizeof(addr), 0, 0, 0);
+            if(ifa->ifa_dstaddr)
             getnameinfo (ifa->ifa_dstaddr, ifa->ifa_dstaddr->sa_len, broadcast, sizeof(broadcast), 0, 0, 0);
             _mask(ifa->ifa_netmask, netmask, 64);
             (*pr)("IP: %s, Broadcast: %s, Netmask: %s\n", addr, broadcast, netmask);
@@ -950,6 +981,7 @@ show_network_tables(pr_fun *pr)
     for (ifp = ifnet.tqh_first; ifp; ifp = ifp->if_link.tqe_next) {
         _show_ifp(ifp, pr);
     }
+
     cyg_scheduler_unlock();
 }
 
@@ -1043,7 +1075,7 @@ db_show_radix_node( struct radix_node *rn, void *w )
  * Use this from ddb:  "call db_show_arptab"
  */
 int
-db_show_arptab()
+db_show_arptab(void)
 {
   struct radix_node_head *rnh;
   rnh = rt_tables[AF_INET];

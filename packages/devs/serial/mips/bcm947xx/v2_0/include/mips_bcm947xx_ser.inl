@@ -89,9 +89,8 @@ pc_serial_info pc_serial_info0;
 void
 pc_serial_info0_add(void *regs, cyg_uint32 irq, cyg_uint32 baud_base, cyg_uint32 reg_shift)
 {
-
-    pc_serial_info0.base = regs;
-	pc_serial_info0.int_num = irq;
+    pc_serial_info0.base = (cyg_addrword_t)regs;
+    pc_serial_info0.int_num = irq;
 }
 
 #if CYGNUM_IO_SERIAL_MIPS_BCM947xx_SERIAL0_BUFSIZE > 0

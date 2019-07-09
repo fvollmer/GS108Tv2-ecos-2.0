@@ -334,7 +334,7 @@ do {                                                                          \
                                      *mcdst++ = *mcsrc++;                     \
                                      *mcdst++ = *mcsrc++;                     \
                                      *mcdst   = *mcsrc  ;                     \
-  } else memcpy(dest, src, mcsz);                                             \
+  } else memmove(dest, src, mcsz);                                            \
 } while(0)
 
 #else /* !CYGIMP_MEMALLOC_ALLOCATOR_DLMALLOC_USE_MEMCPY */
@@ -975,7 +975,7 @@ Cyg_Mempool_dlmalloc_Implementation::Cyg_Mempool_dlmalloc_Implementation(
     }
 
     // too small to be useful?
-    if ( correction + 2*MALLOC_ALIGNMENT > (unsigned) size )
+    if ( correction + 2*(unsigned)MALLOC_ALIGNMENT > (unsigned) size )
         // help catch errors. Don't fail now.
         arenabase = NULL; 
     else {

@@ -140,10 +140,17 @@ nd6_ns_input(m, off, icmp6len)
 	taddr6 = nd_ns->nd_ns_target;
 
 	if (ip6->ip6_hlim != 255) {
+#ifndef BRCM_CHANGES
 		nd6log((LOG_ERR,
 		    "nd6_ns_input: invalid hlim (%d) from %s to %s on %s\n",
 		    ip6->ip6_hlim, ip6_sprintf(&ip6->ip6_src),
 		    ip6_sprintf(&ip6->ip6_dst), if_name(ifp)));
+#else
+                nd6log((LOG_DEBUG,
+                    "nd6_ns_input: invalid hlim (%d) from %s to %s on %s\n",
+                    ip6->ip6_hlim, ip6_sprintf(&ip6->ip6_src),
+                    ip6_sprintf(&ip6->ip6_dst), if_name(ifp)));
+#endif
 		goto bad;
 	}
 
@@ -342,9 +349,15 @@ nd6_ns_input(m, off, icmp6len)
 	return;
 
  bad:
+#ifndef BRCM_CHANGES
 	nd6log((LOG_ERR, "nd6_ns_input: src=%s\n", ip6_sprintf(&saddr6)));
 	nd6log((LOG_ERR, "nd6_ns_input: dst=%s\n", ip6_sprintf(&daddr6)));
 	nd6log((LOG_ERR, "nd6_ns_input: tgt=%s\n", ip6_sprintf(&taddr6)));
+#else
+        nd6log((LOG_DEBUG, "nd6_ns_input: src=%s\n", ip6_sprintf(&saddr6)));
+        nd6log((LOG_DEBUG, "nd6_ns_input: dst=%s\n", ip6_sprintf(&daddr6)));
+        nd6log((LOG_DEBUG, "nd6_ns_input: tgt=%s\n", ip6_sprintf(&taddr6)));
+#endif
 	icmp6stat.icp6s_badns++;
 	m_freem(m);
 }
@@ -618,10 +631,17 @@ nd6_na_input(m, off, icmp6len)
 #endif
 
 	if (ip6->ip6_hlim != 255) {
+#ifndef BRCM_CHANGES
 		nd6log((LOG_ERR,
 		    "nd6_na_input: invalid hlim (%d) from %s to %s on %s\n",
 		    ip6->ip6_hlim, ip6_sprintf(&ip6->ip6_src),
 		    ip6_sprintf(&ip6->ip6_dst), if_name(ifp)));
+#else
+                nd6log((LOG_DEBUG,
+                    "nd6_na_input: invalid hlim (%d) from %s to %s on %s\n",
+                    ip6->ip6_hlim, ip6_sprintf(&ip6->ip6_src),
+                    ip6_sprintf(&ip6->ip6_dst), if_name(ifp)));
+#endif
 		goto bad;
 	}
 
@@ -645,15 +665,26 @@ nd6_na_input(m, off, icmp6len)
 		taddr6.s6_addr16[1] = htons(ifp->if_index);
 
 	if (IN6_IS_ADDR_MULTICAST(&taddr6)) {
+#ifndef BRCM_CHANGES
 		nd6log((LOG_ERR,
 		    "nd6_na_input: invalid target address %s\n",
 		    ip6_sprintf(&taddr6)));
+#else
+              nd6log((LOG_DEBUG,
+                    "nd6_na_input: invalid target address %s\n",
+                    ip6_sprintf(&taddr6)));
+#endif
 		goto bad;
 	}
 	if (IN6_IS_ADDR_MULTICAST(&daddr6))
 		if (is_solicited) {
+#ifndef BRCM_CHANGES
 			nd6log((LOG_ERR,
 			    "nd6_na_input: a solicited adv is multicasted\n"));
+#else
+                         nd6log((LOG_DEBUG,
+                            "nd6_na_input: a solicited adv is multicasted\n"));
+#endif
 			goto bad;
 		}
 

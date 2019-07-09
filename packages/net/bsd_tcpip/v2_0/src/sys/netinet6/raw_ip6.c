@@ -535,7 +535,17 @@ rip6_attach(struct socket *so, int proto, struct proc *p)
 	inp->in6p_cksum = -1;
 	MALLOC(inp->in6p_icmp6filt, struct icmp6_filter *,
 	       sizeof(struct icmp6_filter), M_PCB, M_NOWAIT);
+#ifdef BRCM_CHANGES
+        if(inp->in6p_icmp6filt) {
 	ICMP6_FILTER_SETPASSALL(inp->in6p_icmp6filt);
+        }
+        else {
+          in6_pcbdetach(inp);
+          return ENOBUFS;
+        }  
+#else
+	ICMP6_FILTER_SETPASSALL(inp->in6p_icmp6filt);
+#endif
 	return 0;
 }
 

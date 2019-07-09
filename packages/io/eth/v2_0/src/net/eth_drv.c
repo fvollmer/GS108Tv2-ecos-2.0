@@ -73,6 +73,10 @@
 #include <netinet/if_ether.h>
 #endif
 
+#ifndef NBPFILTER
+#define NBPFILTER 0
+#endif
+
 #if NBPFILTER > 0
 #include <net/bpf.h>
 #include <net/bpfdesc.h>
@@ -342,6 +346,11 @@ eth_drv_init(struct eth_drv_sc *sc, unsigned char *enaddr)
 #ifdef CYGPKG_NET_FREEBSD_STACK
     int unit;
     char *np, *xp;
+#ifdef BRCM_CHANGES    
+    char *cp;
+    unsigned len, m;
+    char c;
+#endif
 #endif
 
     // Set up hardware address
@@ -360,6 +369,7 @@ eth_drv_init(struct eth_drv_sc *sc, unsigned char *enaddr)
     ifp->if_name = xp = ifp->if_xname;
     np = (char *)sc->dev_name;
     unit = 0;
+#ifndef BRCM_CHANGES
     while (*np && !((*np >= '0') && (*np <= '9'))) *xp++ = *np++;
     if (*np) {
         *xp = '\0';
@@ -368,6 +378,37 @@ eth_drv_init(struct eth_drv_sc *sc, unsigned char *enaddr)
         }
         ifp->if_unit = unit;
     }
+#endif
+#ifdef BRCM_CHANGES
+/* The logic to ge the device name in ifunit and here is different. 
+ * This is causing some ioctl to fail with No device error. So kept the logic here
+ * same as the one in ifunit() for consistency.
+ */
+    len = strlen(sc->dev_name);
+    if (!(len < 2 || len > IFNAMSIZ))
+    {
+
+      cp = np + len - 1;
+      c = *cp;
+      m = 1;
+      do {
+             if (cp == np)
+                break;
+                unit += (c - '0') * m;
+                if (unit > 1000000)
+                {
+                   unit = 0;
+                   break;
+                }
+                m *= 10;
+                c = *--cp;
+        } while (c >= '0' && c <= '9');
+    }
+    len = cp-np+1;
+    bcopy(sc->dev_name,xp, len); 
+    *(xp+len)='\0';  
+    ifp->if_unit = unit;  
+#endif
     ifp->if_init = (void_fun *)eth_drv_start;
     ifp->if_output = ether_output;
 #else
@@ -643,6 +684,11 @@ eth_drv_send(struct ifnet *ifp)
          return;
     }
 
+    // If nothing on the queue, no need to bother hardware
+    if (IF_IS_EMPTY(&ifp->if_snd)) {
+        return;
+    }
+
     while ((sc->funs->can_send)(sc) > 0) {
         IF_DEQUEUE(&ifp->if_snd, m0);
         if (m0 == 0) {
@@ -688,13 +734,13 @@ eth_drv_send(struct ifnet *ifp)
 #ifdef CYGDBG_IO_ETH_DRIVERS_DEBUG
             if (cyg_io_eth_net_debug) {
                 START_CONSOLE();
-                diag_printf("xmit %d bytes at %x sg[%d]\n", len, data, sg_len);
+                diag_printf("xmit %d bytes at %p sg[%d]\n", len, data, sg_len);
                 if ( cyg_io_eth_net_debug > 1)
                     diag_dump_buf(data, len);
                 END_CONSOLE();
             }
 #endif
-            if ( MAX_ETH_DRV_SG < sg_len ) {
+            if (m->m_next && (MAX_ETH_DRV_SG <= sg_len)) {
 #ifdef CYGPKG_IO_ETH_DRIVERS_WARN_NO_MBUFS
                 int needed = 0;
                 struct mbuf *m1;
@@ -705,6 +751,8 @@ eth_drv_send(struct ifnet *ifp)
                 END_CONSOLE();
 #endif
                 sg_len = 0;
+                // must free the mbufs
+                m_freem(m0);
                 break; // drop it on the floor
             }
         }
@@ -737,6 +785,8 @@ eth_drv_send(struct ifnet *ifp)
         // Tell hardware to send this packet
         if ( sg_len )
             (sc->funs->send)(sc, sg_list, sg_len, total_len, (unsigned long)m0);
+        else // must free the mbufs
+             m_freem(m0);
 
 #ifdef _LOCK_WITH_ROM_MONITOR
         // Unlock the driver & hardware.  It can once again be safely shared.
@@ -749,6 +799,7 @@ eth_drv_send(struct ifnet *ifp)
 #endif // _LOCK_WITH_ROM_MONITOR
 #undef _LOCK_WITH_ROM_MONITOR
     }
+    return;
 }
 
 //
@@ -791,7 +842,7 @@ eth_drv_recv(struct eth_drv_sc *sc, int total_len)
     struct ether_header _eh, *eh=&_eh;
     struct mbuf *top, **mp, *m;
     int mlen;
-    unsigned char *data;
+    caddr_t data;
 #if MAX_ETH_DRV_SG > 64
     static  // Avoid large stack requirements
 #endif
@@ -1014,7 +1065,9 @@ void eth_drv_tickle_devices( void )
             // this function from tx_done() which normally provide
             // continuous transmissions; otherwise we do not get control.
             // This call fixes that.
-            eth_drv_send(ifp);
+            if (!IF_IS_EMPTY(&ifp->if_snd)) {
+                eth_drv_send(ifp);
+            }
         }
     }
 }

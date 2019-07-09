@@ -257,7 +257,7 @@ CLASS="PROGRAMLISTING"
         &lt;PREFIX&gt;/lib/target.ld: &lt;PACKAGE&gt;/src/mips_vr4300.ld
         $(CC) -E -P -Wp,-MD,target.tmp -DEXTRAS=1 -xc $(INCLUDE_PATH) $(CFLAGS) -o $@ $&lt;
         @echo $@ ": \\" &gt; $(notdir $@).deps
-        @tail -n +2 target.tmp &gt;&gt; $(notdir $@).deps
+        @tail +2 target.tmp &gt;&gt; $(notdir $@).deps
         @echo &gt;&gt; $(notdir $@).deps
         @rm target.tmp
     }

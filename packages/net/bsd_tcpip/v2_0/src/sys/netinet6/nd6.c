@@ -116,6 +116,9 @@ int nd6_maxndopt = 10;	/* max # of ND options allowed */
 int nd6_maxnudhint = 0;	/* max # of subsequent upper layer hints */
 
 int nd6_debug = 1;
+#ifdef BRCM_CHANGES
+int nd6_maxnbr_entries = 1024;	/* max # of neighbor cache entries */
+#endif
 
 /* for debugging? */
 static int nd6_inuse, nd6_allocated;
@@ -1275,7 +1278,6 @@ nd6_rtrequest(req, rt, sa)
 #if !(defined(__FreeBSD__) && __FreeBSD__ >= 3)
 	long time_second = time.tv_sec;
 #endif
-
 	if ((rt->rt_flags & RTF_GATEWAY))
 		return;
 
@@ -1396,6 +1398,13 @@ nd6_rtrequest(req, rt, sa)
 		 * Case 2: This route may come from cloning, or a manual route
 		 * add with a LL address.
 		 */
+#ifdef BRCM_CHANGES
+                if (nd6_inuse >= nd6_maxnbr_entries)
+                {
+	           log(LOG_DEBUG, "nd6_rtrequest: maximum neighbor cache limit exceeded\n");
+		   break;
+                }
+#endif
 		R_Malloc(ln, struct llinfo_nd6 *, sizeof(*ln));
 		rt->rt_llinfo = (caddr_t)ln;
 		if (!ln) {
@@ -1423,6 +1432,19 @@ nd6_rtrequest(req, rt, sa)
 			ln->ln_state = ND6_LLINFO_NOSTATE;
 			ln->ln_expire = time_second;
 		}
+#ifdef BRCM_CHANGES
+                {
+                  struct timeval tv;
+                  bzero(&tv, sizeof (tv));
+                  {
+                    cyg_tick_count_t cur_time;
+                    cur_time = cyg_current_time();
+                    tv.tv_sec = cur_time / 100;
+                    tv.tv_usec = (cur_time % 100) * 10000;
+                  }
+                  ln->last_update = tv.tv_sec;
+                }
+#endif
 		rt->rt_flags |= RTF_LLINFO;
 		ln->ln_next = llinfo_nd6.ln_next;
 		llinfo_nd6.ln_next = ln;
@@ -1541,6 +1563,10 @@ nd6_ioctl(cmd, data, ifp)
 	struct in6_ndireq *ndi = (struct in6_ndireq *)data;
 	struct in6_nbrinfo *nbi = (struct in6_nbrinfo *)data;
 	struct in6_ndifreq *ndif = (struct in6_ndifreq *)data;
+#ifdef BRCM_CHANGES
+        struct in6_ndpcacheinfo *nbrcache = (struct in6_ndpcacheinfo *)data;
+        struct in6_ndpcacheentry *nbrcacheentry = (struct in6_ndpcacheentry *)data;
+#endif
 	struct nd_defrouter *dr;
 	struct nd_prefix *pr;
 	struct rtentry *rt;
@@ -1686,6 +1712,186 @@ nd6_ioctl(cmd, data, ifp)
 		}
 		nd_ifinfo[ifp->if_index].flags = ndi->ndi.flags;
 		break;
+#ifdef BRCM_CHANGES
+        case SIOCANBRINFO_IN6:
+            {
+              struct in6_addr nb_addr = nbrcacheentry->nbrAddr; /* make local for safety */
+               if (IN6_IS_ADDR_LINKLOCAL(&nbrcacheentry->nbrAddr) ||
+                    IN6_IS_ADDR_MC_LINKLOCAL(&nbrcacheentry->nbrAddr)) {
+                        u_int16_t *idp = (u_int16_t *)&nb_addr.s6_addr[2];
+
+                        if (*idp == 0)
+                                *idp = htons(ifp->if_index);
+                }
+
+             if (nd6_cache_lladdr(ifp, &nb_addr, nbrcacheentry->rt_llinfo, nbrcacheentry->lladdrlen, 0, 0) == NULL)
+             {
+		error = EINVAL;
+             }
+             break;
+          }
+        case SIOCDNBRINFO_IN6: 
+          {
+              struct in6_addr nb_addr = nbrcacheentry->nbrAddr; /* make local for safety */
+              struct llinfo_nd6 *ln;
+               if (IN6_IS_ADDR_LINKLOCAL(&nbrcacheentry->nbrAddr) ||
+                    IN6_IS_ADDR_MC_LINKLOCAL(&nbrcacheentry->nbrAddr)) {
+                        u_int16_t *idp = (u_int16_t *)&nb_addr.s6_addr[2];
+
+                        if (*idp == 0)
+                                *idp = htons(ifp->if_index);
+                }
+#ifdef __NetBSD__
+                s = splsoftnet();
+#else
+                s = splnet();
+#endif
+                if ((rt = nd6_lookup(&nb_addr, 0, ifp)) == NULL ||
+                    (ln = (struct llinfo_nd6 *)rt->rt_llinfo) == NULL) {
+                        error = EINVAL;
+                        splx(s);
+                        break;
+                }
+                else {
+                  nd6_free(rt, 0);
+                }
+                splx(s);
+
+              break;
+          }
+        case SIOCGNBRCACHEINFO_IN6:
+          {
+           
+           struct in6_addr nb_addr = nbrcache->nbrAddr; /* make local for safety */
+           struct llinfo_nd6 *ln, *nln;
+           struct sockaddr_dl *sdl = NULL;
+           char firstget = 0, foundentry = 0, matchfound = 0;
+           if (IN6_IS_ADDR_LINKLOCAL(&nbrcache->nbrAddr) ||
+                  IN6_IS_ADDR_MC_LINKLOCAL(&nbrcache->nbrAddr)) {
+                        u_int16_t *idp = (u_int16_t *)&nb_addr.s6_addr[2];
+
+                        if (*idp == 0)
+                                *idp = htons(ifp->if_index);
+                }
+           if (IN6_IS_ADDR_UNSPECIFIED(&nb_addr))
+           {
+              firstget = 1;
+           }
+              #ifdef __NetBSD__
+                s = splsoftnet();
+#else
+                s = splnet();
+#endif
+           if (nbrcache->match_flag == 0)
+           {
+                if ((rt = nd6_lookup(&nb_addr, 0, ifp)) == NULL ||
+                    (ln = (struct llinfo_nd6 *)rt->rt_llinfo) == NULL) {
+                        error = EINVAL;
+                        splx(s);
+                        break;
+                }
+                sdl = SDL(rt->rt_gateway);
+                nbrcache->ln_router = ln->ln_router;
+                nbrcache->ln_expire = ln->ln_expire;
+                nbrcache->ln_last_update = ln->last_update;
+                nbrcache->ln_state = ln->ln_state;
+                nbrcache->rt_flags = rt->rt_flags;
+                bcopy(LLADDR(sdl), nbrcache->rt_llinfo, ifp->if_addrlen);
+                nbrcache->lladdrlen = ifp->if_addrlen;
+                splx(s);
+                break;
+
+           }
+           else {
+             struct rtentry *rt;
+             struct sockaddr_in6 *dst;
+             ln = llinfo_nd6.ln_next;
+             while (ln && ln != &llinfo_nd6) {
+                struct llinfo_nd6 *next = ln->ln_next;
+                nln = ln->ln_next;
+                if ((rt = ln->ln_rt)== NULL) {
+                        ln = next;
+                        continue;
+                }
+                if ((rt->rt_flags & RTF_LOCAL))
+                {
+                  ln = next;
+                  continue;
+                }
+                dst = (struct sockaddr_in6 *)rt_key(rt);
+                if (dst)
+                {
+                  if ((firstget == 1) && (!IN6_IS_ADDR_UNSPECIFIED(&dst->sin6_addr)))
+                  {
+                    foundentry = 1;
+                    break;  
+                  }
+                  if (matchfound == 1)
+                  {
+                     foundentry = 1;
+                     break;
+                  }
+                  if ((bcmp(&dst->sin6_addr,&nb_addr,sizeof(nb_addr))== 0) )
+                  {
+                    matchfound = 1;
+                  }
+                }
+                ln = next;  
+             }
+             if (foundentry == 1)
+             {
+                bcopy(&dst->sin6_addr,&nbrcache->nbrAddr,sizeof(nb_addr));
+                nb_addr = nbrcache->nbrAddr;
+                if (IN6_IS_ADDR_LINKLOCAL(&nbrcache->nbrAddr) ||
+                  IN6_IS_ADDR_MC_LINKLOCAL(&nbrcache->nbrAddr)) {
+                        u_int16_t *idp = (u_int16_t *)&nb_addr.s6_addr[2];
+
+                        if (*idp == 0)
+                                *idp = htons(ifp->if_index);
+                }
+
+                nbrcache->ln_router = ln->ln_router;
+                nbrcache->ln_expire = ln->ln_expire;
+                nbrcache->ln_state = ln->ln_state;
+                nbrcache->ln_last_update = ln->last_update;
+                nbrcache->rt_flags = rt->rt_flags;
+                sdl = SDL(rt->rt_gateway);
+                bcopy(LLADDR(sdl), nbrcache->rt_llinfo, ifp->if_addrlen);
+                nbrcache->lladdrlen = ifp->if_addrlen;
+             }
+             else
+             {
+               error = EINVAL;
+             }
+           }
+           splx(s);
+           break;
+          }
+        case SIOCNDPFLUSH_IN6:
+        {
+           struct llinfo_nd6 *ln, *nln;
+           ln = llinfo_nd6.ln_next;
+           while (ln && ln != &llinfo_nd6) {
+                struct rtentry *rt;
+                struct sockaddr_dl *sdl;
+
+                nln = ln->ln_next;
+                rt = ln->ln_rt;
+                if (rt && rt->rt_gateway &&
+                    rt->rt_gateway->sa_family == AF_LINK) {
+                     if (!(rt->rt_flags & RTF_LOCAL))
+                     {
+                        sdl = (struct sockaddr_dl *)rt->rt_gateway;
+                        if (sdl->sdl_index == ifp->if_index)
+                                nln = nd6_free(rt, 0);
+                     }
+                }
+                ln = nln;
+           }
+           break;
+        }
+#endif
+
 	case SIOCSNDFLUSH_IN6:	/* XXX: the ioctl name is confusing... */
 		/* sync kernel routing table with the default router list */
 		defrouter_reset();
@@ -1819,7 +2025,6 @@ nd6_cache_lladdr(ifp, from, lladdr, lladdrlen, type, code)
 		panic("ifp == NULL in nd6_cache_lladdr");
 	if (!from)
 		panic("from == NULL in nd6_cache_lladdr");
-
 	/* nothing must be updated for unspecified address */
 	if (IN6_IS_ADDR_UNSPECIFIED(from))
 		return NULL;
@@ -1895,7 +2100,19 @@ fail:
 		sdl->sdl_alen = ifp->if_addrlen;
 		bcopy(lladdr, LLADDR(sdl), ifp->if_addrlen);
 	}
-
+#ifdef BRCM_CHANGES
+         {
+          struct timeval tv;
+          bzero(&tv, sizeof (tv));
+          {
+             cyg_tick_count_t cur_time;
+             cur_time = cyg_current_time();
+             tv.tv_sec = cur_time / 100;
+             tv.tv_usec = (cur_time % 100) * 10000;
+          }
+          ln->last_update = tv.tv_sec;
+         }
+#endif
 	if (!is_newentry) {
 		if ((!olladdr && lladdr)		/* (3) */
 		 || (olladdr && lladdr && llchange)) {	/* (5) */
@@ -2006,7 +2223,15 @@ fail:
 		}
 		break;
 	}
-
+#ifdef BRCM_CHANGES
+        if (type == 0)
+        {
+          ln->ln_router = 0;
+          ln->last_update = 0;
+          ln->ln_expire = ND6_INFINITE_LIFETIME;
+          ln->ln_state = ND6_LLINFO_REACHABLE;
+        }
+#endif
 	/*
 	 * When the link-layer address of a router changes, select the
 	 * best router again.  In particular, when the neighbor entry is newly

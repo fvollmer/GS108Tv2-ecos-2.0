@@ -61,6 +61,8 @@
 #include <net/ethernet.h>
 #include <net/if_arp.h>
 
+#define L7_ARP_TRAVERSE_FLUSH_APIS
+
 /*
  * Macro to map an IP multicast address to an Ethernet multicast address.
  * The high-order 25 bits of the Ethernet address are statically assigned,
@@ -148,4 +150,13 @@ int	arpresolve __P((struct arpcom *, struct rtentry *, struct mbuf *,
 void	arp_ifinit __P((struct arpcom *, struct ifaddr *));
 #endif
 
+#ifdef L7_ARP_TRAVERSE_FLUSH_APIS
+int
+arp_nextget  __P(( struct in_addr* ,   /* Next IP address */
+                        char [] ,            /* Buffer for mac address */
+                                          u_long *             /* expiration value */
+                                                         ));
+
+void arpflush __P(( void *));
+#endif
 #endif

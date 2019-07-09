@@ -156,10 +156,17 @@ nd6_rs_input(m, off, icmp6len)
 
 	/* Sanity checks */
 	if (ip6->ip6_hlim != 255) {
+#ifdef BRCM_CHANGES
 		nd6log((LOG_ERR,
 		    "nd6_rs_input: invalid hlim (%d) from %s to %s on %s\n",
 		    ip6->ip6_hlim, ip6_sprintf(&ip6->ip6_src),
 		    ip6_sprintf(&ip6->ip6_dst), if_name(ifp)));
+#else 
+                nd6log((LOG_DEBUG,
+                    "nd6_rs_input: invalid hlim (%d) from %s to %s on %s\n",
+                    ip6->ip6_hlim, ip6_sprintf(&ip6->ip6_src),
+                    ip6_sprintf(&ip6->ip6_dst), if_name(ifp)));
+#endif
 		goto bad;
 	}
 
@@ -251,10 +258,17 @@ nd6_ra_input(m, off, icmp6len)
 		goto freeit;
 
 	if (ip6->ip6_hlim != 255) {
+#ifndef BRCM_CHANGES
 		nd6log((LOG_ERR,
 		    "nd6_ra_input: invalid hlim (%d) from %s to %s on %s\n",
 		    ip6->ip6_hlim, ip6_sprintf(&ip6->ip6_src),
 		    ip6_sprintf(&ip6->ip6_dst), if_name(ifp)));
+#else
+                 nd6log((LOG_DEBUG,
+                    "nd6_ra_input: invalid hlim (%d) from %s to %s on %s\n",
+                    ip6->ip6_hlim, ip6_sprintf(&ip6->ip6_src),
+                    ip6_sprintf(&ip6->ip6_dst), if_name(ifp)));
+#endif
 		goto bad;
 	}
 
@@ -1359,6 +1373,11 @@ prelist_update(new, dr, m)
 	 */
 
 	/* 5.5.3 (a). Ignore the prefix without the A bit set. */
+#ifdef BRCM_CHANGES
+
+        if ((new->ndpr_raf_auto) && (!ip6_auto_config))
+                goto end;
+#endif
 	if (!new->ndpr_raf_auto)
 		goto end;
 
@@ -1650,8 +1669,36 @@ pfxlist_onlink_check()
 				continue;
 
 			if ((pr->ndpr_stateflags & NDPRF_DETACHED) == 0 &&
-			    find_pfxlist_reachable_router(pr) == NULL)
+			    find_pfxlist_reachable_router(pr) == NULL){
 				pr->ndpr_stateflags |= NDPRF_DETACHED;
+#ifdef BRCM_CHANGES
+                for (ifa = in6_ifaddr; ifa; ifa = ifa->ia_next) {
+                struct sockaddr_in6 search;
+                int i,len =0;
+                bzero(&search, sizeof(search));
+                if ((ifa->ia6_flags & IN6_IFF_AUTOCONF))
+                        continue;
+                search = ifa->ia_addr;
+                len = in6_mask2len(&ifa->ia_prefixmask.sin6_addr,
+                                             NULL);
+                if (len != pr->ndpr_plen) {
+                  continue;
+                }
+                /* apply the mask . */
+                for (i = 0; i < 4; i++) {
+                        search.sin6_addr.s6_addr32[i] &=
+                                ifa->ia_prefixmask.sin6_addr.s6_addr32[i];
+                }
+                if(in6_are_prefix_equal(&pr->ndpr_prefix.sin6_addr, 
+                                        &search.sin6_addr,
+                                        pr->ndpr_plen)) {
+                   pr->ndpr_stateflags &= ~NDPRF_DETACHED;
+                   break;
+                }
+                }
+
+#endif
+                        }
 			if ((pr->ndpr_stateflags & NDPRF_DETACHED) != 0 &&
 			    find_pfxlist_reachable_router(pr) != 0)
 				pr->ndpr_stateflags &= ~NDPRF_DETACHED;

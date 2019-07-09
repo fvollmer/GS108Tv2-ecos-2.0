@@ -112,8 +112,10 @@ static int
 rt_reinit_rtdelete( struct radix_node *rn, void *vifp )
 {
     struct rtentry *rt = (struct rtentry *)rn;
-    rtrequest(RTM_DELETE, rt_key(rt), rt->rt_gateway, rt_mask(rt),
-              0, NULL);
+    if (rt->rt_ifa->ifa_addr->sa_family == AF_INET) {
+      rtrequest(RTM_DELETE, rt_key(rt), rt->rt_gateway, rt_mask(rt),
+		0, NULL);
+    }
     return (0);
 }
 

@@ -236,6 +236,16 @@ typedef cyg_uint32 CYG_INTERRUPT_STATE;
         "and    $8,$8,0XFFFFFFFE;"              \
         "mtc0   $8,$12;"                        \
         "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
         "and    %0,%0,0X1;"                     \
         : "=r"(_old_)                           \
         :                                       \
@@ -250,6 +260,16 @@ typedef cyg_uint32 CYG_INTERRUPT_STATE;
         "or     $8,$8,1;"                       \
         "mtc0   $8,$12;"                        \
         "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
         :                                       \
         :                                       \
         : "$8"                                  \
@@ -263,6 +283,16 @@ typedef cyg_uint32 CYG_INTERRUPT_STATE;
         "and    %0,%0,0x1;"                     \
         "or     $8,$8,%0;"                      \
         "mtc0   $8,$12;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
+        "nop; nop; nop;"                        \
         "nop; nop; nop;"                        \
         :                                       \
         : "r"(_old_)                            \

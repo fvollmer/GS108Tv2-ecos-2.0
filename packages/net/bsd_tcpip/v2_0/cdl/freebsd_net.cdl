@@ -154,6 +154,14 @@ cdl_package CYGPKG_NET_FREEBSD_STACK {
 
         }
     }
+    cdl_option CYGPKG_NET_BRCM_CHANGES {
+        display "Enable BRCM defined customizations"
+        flavor  data
+        default_value 1
+        description   "
+            This option controls enable/diable of BRCM defined customizations."
+        define BRCM_CHANGES
+    }
 
     cdl_option CYGPKG_NET_NGIF {
         display "Number of GIF things"

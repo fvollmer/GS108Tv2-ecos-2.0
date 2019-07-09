@@ -146,7 +146,12 @@ readwritev( int fd, const cyg_iovec *_iov, int iov_len, int direction )
     CYG_CANCELLATION_POINT;
 
     if( ret != 0 )
-        FILEIO_RETURN(ret);
+    {
+        if ((ret == EWOULDBLOCK || ret == EAGAIN) && cnt)
+            FILEIO_RETURN_VALUE(cnt);
+        else
+            FILEIO_RETURN(ret);
+    }
  
     FILEIO_RETURN_VALUE(cnt);
 }
@@ -205,7 +210,9 @@ __externC int close( int fd )
     fp = cyg_fp_get( fd );
 
     if( fp == NULL )
+    {
         FILEIO_RETURN(EBADF);
+    }
 
     cyg_fp_free( fp );
     
@@ -481,4 +488,44 @@ __externC int isatty( int fd )
 }
 
 // -------------------------------------------------------------------------
+#if 0
+_externC void cyg_soc_dump(void)
+{
+    cyg_file *fp;
+    int fd;
+#define FD_ALLOCATED ((cyg_file *)1)
+// Mutex for controlling access to file desriptor arrays
+extern Cyg_Mutex fdlock;
+
+// Array of open file objects
+extern cyg_file file[CYGNUM_FILEIO_NFILE];
+// Descriptor array
+extern cyg_file *desc[CYGNUM_FILEIO_NFD];
+
+
+    FILEIO_MUTEX_LOCK(fdlock);
+
+    diag_printf(" fd  valid   fp   alloc   usecount\n");
+    for( fd = 0; fd < CYGNUM_FILEIO_NFD; fd++ )
+    {
+        fp = desc[fd];
+        if( fp = NULL )
+        {
+          diag_printf(" %2d  %s\n", fd, "No");
+        }
+        else
+        {
+          if( fp != FD_ALLOCATED && fp != NULL)
+            diag_printf(" %2d  %3s   %p   %3s   %d\n",fd, "Yes", fp, "Yes*", fp->f_ucount);
+          else
+            diag_printf(" %2d  %3s   %p   %3s   %d\n", fd, "Yes", fp,
+                  (fp == FD_ALLOCATED ? "Yes":"No"), (fp != NULL ? fp->f_ucount:0));
+        }
+    }
+    FILEIO_MUTEX_UNLOCK(fdlock);
+
+    return;
+}
+#endif /* cyg_soc_dump */
+
 // EOF io.cxx

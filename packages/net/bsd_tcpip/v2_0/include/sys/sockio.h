@@ -134,5 +134,8 @@
 /* NB these two take a struct ifreq followed by the useful data */
 #define SIOCGIFSTATSUD  _IOWR('i',102, struct ifreq)    /* get uptodate if stats */
 #define SIOCGIFSTATS    _IOWR('i',103, struct ifreq)    /* get interface stats */
+#ifdef BRCM_CHANGES
+#define SIOCGIFINDEX _IOWR('i',104,  struct ifreq)    /* get interface index */
+#endif
 
 #endif /* !_SYS_SOCKIO_H_ */

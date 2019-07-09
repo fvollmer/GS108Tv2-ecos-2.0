@@ -62,7 +62,19 @@
 #include <pkgconf/memalloc.h>
 
 /* TYPE DEFINITIONS */
+#ifdef CYGPKG_KERNEL
+#include <cyg/kernel/kapi.h>
+#else
+typedef cyg_uint32 cyg_handle_t;
+#endif
 
+/*---------------------------------------------------------------------------*/
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/*---------------------------------------------------------------------------*/
 struct cyg_mempool_var;
 typedef struct cyg_mempool_var cyg_mempool_var;
 
@@ -176,7 +188,12 @@ cyg_bool_t cyg_mempool_fix_waiting(cyg_handle_t fixpool);
    provided. */
 void cyg_mempool_fix_get_info(cyg_handle_t fixpool, cyg_mempool_info *info);
 
+/*---------------------------------------------------------------------------*/
+#ifdef __cplusplus
+}
+#endif
 
+/*---------------------------------------------------------------------------*/
 
 #endif /* ifndef CYGONCE_MEMALLOC_KAPI_H */
 /* EOF kapi.h */

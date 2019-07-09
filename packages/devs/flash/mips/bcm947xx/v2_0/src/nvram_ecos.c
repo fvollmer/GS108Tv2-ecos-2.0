@@ -119,7 +119,7 @@ char* nvram_get_ecos(const char* name)
         return "";
     }
     
-	value = _nvram_get_ecos(name);
+	value = (char *)_nvram_get_ecos(name);
 
 	return value;
 }

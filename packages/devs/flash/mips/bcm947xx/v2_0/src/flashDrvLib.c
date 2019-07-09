@@ -103,6 +103,8 @@ flashFlushLoadedSector(int number, int reason)
 
 
 struct flash_drv_funcs_s *flash_drv_funcs_list[] = {
+    &flash28f128m29ewh,
+    &flash29GL128,
     &flash28f320,
     &flash28f640,
     &flash28f128p33t,
@@ -119,7 +121,8 @@ flashDrvLibInit(void)
     FLASH_TYPES     dev;
     FLASH_VENDORS   vendor;
     int i;
-				
+
+diag_printf(" in flashDrvLibInit 47xx\n");				
 flashBaseAddress = FLASH_BASE_ADDRESS_ALIAS;
 
     i=0;
@@ -127,10 +130,9 @@ flashBaseAddress = FLASH_BASE_ADDRESS_ALIAS;
     dev = 0xFF;
     while ( (i<flash_drv_funcs_list_size) && (vendor == 0xFF) && (dev == 0xFF) ) {
         flashDrvFuncs = flash_drv_funcs_list[i];
-        flashDrvFuncs->flashAutoSelect(&dev, &vendor);
+    flashDrvFuncs->flashAutoSelect(&dev, &vendor);
         i++;
     }
-
     switch (vendor) {
         case AMD:
         case ALLIANCE:
@@ -233,6 +235,12 @@ flashBaseAddress = FLASH_BASE_ADDRESS_ALIAS;
                 flashDevSectorSize = 0x20000;
                 if (flashVerbose)
                     diag_printf("flashInit(): 28F128 Found\n");
+                break;
+            case FLASH_29GL128:
+                flashSectorCount = 128;
+                flashDevSectorSize = 0x20000;
+                if (flashVerbose)
+                    diag_printf("flashInit(): 29GL128 Found\n");
                 break;
             case FLASH_2F128:
                 flashSectorCount = 128;

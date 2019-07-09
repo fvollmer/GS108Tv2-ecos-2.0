@@ -119,8 +119,6 @@ flashiodev_init( struct cyg_devtab_entry *tab )
          dev->end = (char *)flash_info.start + CYGNUM_IO_FLASH_BLOCK_OFFSET_3 +
             CYGNUM_IO_FLASH_BLOCK_LENGTH_3;
         }
-
-    
 #endif
 
         return true;

@@ -1131,7 +1131,11 @@ ifioctl(so, cmd, data, p)
 	case SIOCGIFFLAGS:
 		ifr->ifr_flags = ifp->if_flags;
 		break;
-
+#ifdef BRCM_CHANGES
+        case SIOCGIFINDEX:
+                ifr->ifr_ifindex = ifp->if_index;
+                break;
+#endif
 	case SIOCGIFMETRIC:
 		ifr->ifr_metric = ifp->if_metric;
 		break;

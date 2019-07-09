@@ -218,6 +218,9 @@ struct mbstat {
 	u_long	m_clfree;	/* free clusters */
 	u_long	m_drops;	/* times failed to find space */
 	u_long	m_wait;		/* times waited for space */
+	u_long	mc_wait;	/* times waited for cluster */
+	u_long	mr_wait;	/* times waited for retry */
+	u_long	mrh_wait;	/* times waited for retry for header */
 	u_long	m_drain;	/* times drained protocols for space */
 	u_long	m_mcfail;	/* times m_copym failed */
 	u_long	m_mpfail;	/* times m_pullup failed */

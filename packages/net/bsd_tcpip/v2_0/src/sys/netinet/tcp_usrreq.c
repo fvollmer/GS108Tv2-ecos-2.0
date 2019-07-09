@@ -147,7 +147,7 @@ tcp_usr_attach(struct socket *so, int proto, struct proc *p)
 		goto out;
 
 	if ((so->so_options & SO_LINGER) && so->so_linger == 0)
-		so->so_linger =  TCP_LINGERTIME;
+		so->so_linger =  0 ;  /* TCP_LINGERTIME; alok11*/
 	tp = sototcpcb(so);
 out:
 	TCPDEBUG2(PRU_ATTACH);

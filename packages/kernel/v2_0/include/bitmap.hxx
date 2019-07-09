@@ -156,6 +156,10 @@ protected:
     // These are not applicable in a bitmap scheduler; placeholders:
     inline void rotate_queue( cyg_priority pri ) { };
     inline void to_queue_head( void ) { };
+    
+    inline void timeslice_save() {};
+    inline void timeslice_restore() {};
+    inline void timeslice_reset() {};
 };
 
 // -------------------------------------------------------------------------

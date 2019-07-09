@@ -128,6 +128,7 @@ cyg_bool_t init_loopback_interface(int lo)
     }
     if (setsockopt(s, SOL_SOCKET, SO_BROADCAST, &one, sizeof(one))) {
         perror("setsockopt");
+	close(s);
         return false;
     }
 
@@ -149,6 +150,7 @@ cyg_bool_t init_loopback_interface(int lo)
 
     if (ioctl(s, SIOCSIFADDR, &ifr)) {
         perror("SIOCIFADDR");
+        close(s);
         return false;
     }
     
@@ -166,6 +168,7 @@ cyg_bool_t init_loopback_interface(int lo)
     ifr.ifr_flags = IFF_UP | IFF_BROADCAST | IFF_RUNNING;
     if (ioctl(s, SIOCSIFFLAGS, &ifr)) {
         perror("SIOCSIFFLAGS");
+        close(s);
         return false;
     }
 
@@ -191,6 +194,7 @@ cyg_bool_t init_loopback_interface(int lo)
         diag_printf(", gateway: %s\n", inet_ntoa(((struct sockaddr_in *)&route.rt_gateway)->sin_addr));
         if (errno != EEXIST) {
             perror("SIOCADDRT 3");
+            close(s);
             return false;
         }
     }

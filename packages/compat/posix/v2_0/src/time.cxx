@@ -641,7 +641,7 @@ externC int nanosleep( const struct timespec *rqtp,
         TIME_RETURN(0);
 
     // Convert timespec to ticks
-    ticks = cyg_timespec_to_ticks( rqtp, false );
+    ticks = cyg_timespec_to_ticks( rqtp, true );
 
     CYG_ASSERT( ticks != 0, "Zero tick count");
     

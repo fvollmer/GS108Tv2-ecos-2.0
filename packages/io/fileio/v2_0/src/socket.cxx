@@ -148,7 +148,7 @@ __externC int	socket (int domain, int type, int protocol)
 {
     SOCKET_ENTRY();
 
-    int err = 0;
+    int err = EAFNOSUPPORT;
     int fd;
     cyg_file *file;
 
@@ -267,7 +267,8 @@ __externC int	bind (int s, const struct sockaddr *sa, unsigned int len)
 
     int ret = 0;
     cyg_file *fp;
-    
+    struct sockaddr sa2 = *sa;
+
     fp = cyg_fp_get( s );
 
     if( fp == NULL )
@@ -279,7 +280,7 @@ __externC int	bind (int s, const struct sockaddr *sa, unsigned int len)
 
         LOCK_SOCKET( fp );
 
-        ret = ops->bind( fp, sa, len );
+        ret = ops->bind( fp, &sa2, len );
 
         UNLOCK_SOCKET( fp );
 

@@ -86,9 +86,10 @@ extern unsigned int    flashBaseAddress;
 extern struct flash_drv_funcs_s flash28f320;
 extern struct flash_drv_funcs_s flash28f640;
 extern struct flash_drv_funcs_s flash28f128p33t;
+extern struct flash_drv_funcs_s flash28f128m29ewh;
 extern struct flash_drv_funcs_s flash29lxxx;
 extern struct flash_drv_funcs_s flash29GLxxx;
-
+extern struct flash_drv_funcs_s flash29GL128;
 
 int             flashDrvLibInit(void);
 int             flashGetSectorCount(void);

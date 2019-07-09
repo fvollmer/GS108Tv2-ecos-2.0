@@ -14761,9 +14761,9 @@ cdl_component CYGDAT_IO_FLASH_BLOCK_DEVICE_NAME_1 {
 cdl_option CYGNUM_IO_FLASH_BLOCK_OFFSET_1 {
     # Flavor: data
     # No user value, uncomment the following line to provide one.
-    # user_value 0x00100000
+    # user_value 0x00140000
     # value_source default
-    # Default value: 0x00100000
+    # Default value: 0x00140000
 };
 
 # Length
@@ -14773,9 +14773,45 @@ cdl_option CYGNUM_IO_FLASH_BLOCK_OFFSET_1 {
 cdl_option CYGNUM_IO_FLASH_BLOCK_LENGTH_1 {
     # Flavor: data
     # No user value, uncomment the following line to provide one.
-    # user_value 0x00100000
+    # user_value 0x00340000
     # value_source default
-    # Default value: 0x00100000
+    # Default value: 0x00340000
+};
+
+# <
+# Name of flash device 2 block device
+#
+cdl_component CYGDAT_IO_FLASH_BLOCK_DEVICE_NAME_2 {
+    # Flavor: data
+    # No user value, uncomment the following line to provide one.
+    # user_value "\"/dev/flash2\""
+    # value_source default
+    # Default value: "\"/dev/flash2\""
+};
+
+# >
+# Start offset from flash base
+# This gives the offset from the base of flash which this
+# block device corresponds to.
+#
+cdl_option CYGNUM_IO_FLASH_BLOCK_OFFSET_2 {
+    # Flavor: data
+    # No user value, uncomment the following line to provide one.
+    # user_value 0x00480000
+    # value_source default
+    # Default value: 0x00480000
+};
+
+# Length
+# This gives the length of the region of flash given over
+# to this block device.
+#
+cdl_option CYGNUM_IO_FLASH_BLOCK_LENGTH_2 {
+    # Flavor: data
+    # No user value, uncomment the following line to provide one.
+    # user_value 0x00340000
+    # value_source default
+    # Default value: 0x00340000
 };
 
 # <

@@ -172,7 +172,6 @@ tcp_init()
 	tcp_keepidle = TCPTV_KEEP_IDLE;
 	tcp_keepintvl = TCPTV_KEEPINTVL;
 	tcp_maxpersistidle = TCPTV_KEEP_IDLE;
-	tcp_maxidle = TCPTV_KEEPCNT * TCPTV_KEEPINTVL;
 	tcp_msl = TCPTV_MSL;
 
 	LIST_INIT(&tcb);

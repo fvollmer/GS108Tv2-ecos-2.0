@@ -72,6 +72,11 @@ cdl_package CYGPKG_NET {
         display   "Network stack support for IPv6"
     }
 
+
+# LVL7_FIXUP - bootp/dhcp modules are defined in FP and not required in eCos/kernel 
+# hence  "bootp_support.c  dhcp_support.c  dhcp_prot.c" are removed from
+# CYGPKG_NET_INET
+
     cdl_component CYGPKG_NET_INET {
         display       "INET support"
         active_if     CYGPKG_NET_STACK_INET
@@ -86,9 +91,6 @@ cdl_package CYGPKG_NET {
             inet_ntoa.c \
             inet_ntop.c \
             inet_pton.c \
-            bootp_support.c \
-            dhcp_support.c \
-            dhcp_prot.c \
             network_support.c \
             getproto.c \
             getserv.c 

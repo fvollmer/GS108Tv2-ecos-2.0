@@ -178,7 +178,7 @@ cdl_package CYGPKG_IO_FLASH {
             }
 
         }
-               cdl_component CYGDAT_IO_FLASH_BLOCK_DEVICE_NAME_3 {
+            cdl_component CYGDAT_IO_FLASH_BLOCK_DEVICE_NAME_3 {
                 display       "Name of flash device 1 block device"
                 flavor        data
                 default_value { "\"/dev/boot.dim\"" }
@@ -224,7 +224,7 @@ cdl_package CYGPKG_IO_FLASH {
             }
 
         }
-                
+
 
     }
 }

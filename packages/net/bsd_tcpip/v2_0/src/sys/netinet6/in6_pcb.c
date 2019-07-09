@@ -589,8 +589,16 @@ in6_pcbdetach(inp)
 	sotoinpcb(so) = 0;
 	sofree(so);
 
-	if (inp->in6p_inputopts) /* Free all received options. */
+	if (inp->in6p_inputopts) { /* Free all received options. */
  		m_freem(inp->in6p_inputopts->head); /* this is safe */
+#ifdef BRCM_CHANGES
+           if (inp->in6p_inputopts)
+           {
+              FREE(inp->in6p_inputopts,M_IP6OPT);
+           }
+#endif
+
+        }
  	ip6_freepcbopts(inp->in6p_outputopts);
  	ip6_freemoptions(inp->in6p_moptions);
 	if (inp->in6p_route.ro_rt)

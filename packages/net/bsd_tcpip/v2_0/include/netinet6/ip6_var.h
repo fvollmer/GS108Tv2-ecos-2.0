@@ -336,6 +336,9 @@ extern int	ip6_maxfragpackets; /* Maximum packets in reassembly queue */
 extern int	ip6_sourcecheck;	/* Verify source interface */
 extern int	ip6_sourcecheck_interval; /* Interval between log messages */
 extern int	ip6_accept_rtadv;	/* Acts as a host not a router */
+#ifdef BRCM_CHANGES
+extern int	ip6_auto_config;	/* Enables Or Disables the auto config mode */
+#endif
 extern int	ip6_keepfaith;		/* Firewall Aided Internet Translator */
 extern int	ip6_log_interval;
 extern time_t	ip6_log_time;

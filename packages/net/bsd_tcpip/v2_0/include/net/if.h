@@ -217,6 +217,9 @@ struct	ifreq {
 		struct	sockaddr ifru_hwaddr;
 		short	ifru_flags[2];
 		int	ifru_metric;
+#ifdef BRCM_CHANGES
+                int     ifru_ivalue;
+#endif
 		int	ifru_mtu;
 		int	ifru_phys;
 		int	ifru_media;
@@ -233,6 +236,9 @@ struct	ifreq {
 #define ifr_phys	ifr_ifru.ifru_phys	/* physical wire */
 #define ifr_media	ifr_ifru.ifru_media	/* physical media */
 #define	ifr_data	ifr_ifru.ifru_data	/* for use by interface */
+#ifdef BRCM_CHANGES
+#define ifr_ifindex    ifr_ifru.ifru_ivalue    /* interface index      */
+#endif
 };
 
 #define	_SIZEOF_ADDR_IFREQ(ifr) \

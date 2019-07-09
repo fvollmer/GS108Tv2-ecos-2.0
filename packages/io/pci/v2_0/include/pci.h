@@ -268,6 +268,8 @@ externC cyg_bool cyg_pci_configure_bus( cyg_uint8 bus,
 // necessary.
 externC void cyg_pci_set_memory_base( CYG_PCI_ADDRESS64 base );
 externC void cyg_pci_set_io_base( CYG_PCI_ADDRESS32 base );
+externC void cyg_pci_set_memory_secondary( CYG_PCI_ADDRESS64 base );
+externC void cyg_pci_set_io_secondary( CYG_PCI_ADDRESS32 base );
 
 // These routines allocate memory or IO space to the base address
 // register indicated by bar. The base address in *base will be

@@ -483,7 +483,11 @@ ip6_input(m)
 #else
 				ip6stat.ip6s_m2m[loif[0].if_index]++; /* XXX */
 #endif
+#ifdef BRCM_CHANGES
+			} else if ((m->m_pkthdr.rcvif) && (m->m_pkthdr.rcvif->if_index < M2MMAX))
+#else
 			} else if (m->m_pkthdr.rcvif->if_index < M2MMAX)
+#endif
 				ip6stat.ip6s_m2m[m->m_pkthdr.rcvif->if_index]++;
 			else
 				ip6stat.ip6s_m2m[0]++;
@@ -2468,8 +2472,13 @@ ip6_addaux(m)
 		}
 	} else {
 		n = m_aux_add(m, AF_INET6, -1);
-		n->m_len = sizeof(struct ip6aux);
-		bzero(mtod(n, caddr_t), n->m_len);
+#ifdef BRCM_CHANGES
+               if (!n) {
+                 return NULL;
+               }
+#endif
+              n->m_len = sizeof(struct ip6aux);
+              bzero(mtod(n, caddr_t), n->m_len);
 	}
 	return n;
 }

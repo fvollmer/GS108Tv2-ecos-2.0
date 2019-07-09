@@ -431,6 +431,11 @@ in6_control(so, cmd, data, ifp)
 	struct	in6_ifaddr *ia = NULL;
 	struct	in6_aliasreq *ifra = (struct in6_aliasreq *)data;
 	struct sockaddr_in6 *sa6;
+#ifdef BRCM_CHANGES
+        struct in6_mode *autocfg_mode= (struct in6_mode *)data; 
+        struct in6_mode *ipv6mode= (struct in6_mode *)data; 
+        int s;
+#endif
 #if !(defined(__FreeBSD__) && __FreeBSD__ >= 3)
 	time_t time_second = (time_t)time.tv_sec;
 #endif
@@ -446,6 +451,53 @@ in6_control(so, cmd, data, ifp)
 	case SIOCDADDRCTL_POLICY:
 		return(in6_src_ioctl(cmd, data));
 	}
+#ifdef BRCM_CHANGES     
+        switch(cmd) {
+        case SIOCSAUTOCFG_IN6:
+#ifdef __NetBSD__
+                s = splsoftnet();
+#else
+                s = splnet();
+#endif
+
+             if (autocfg_mode->in6_mode)
+             {
+               ip6_auto_config = autocfg_mode->in6_mode;
+             }
+             else
+             {
+               ip6_auto_config = 0;
+             }
+              splx(s);
+
+            return 0;
+        case SIOCGAUTOCFG_IN6:
+              autocfg_mode->in6_mode = ip6_auto_config;
+            return 0;
+         case SIOCGMODE_IN6:
+              ipv6mode->in6_mode = ip6_auto_linklocal;
+            return 0;
+         case SIOCSMODE_IN6:
+#ifdef __NetBSD__
+                s = splsoftnet();
+#else
+                s = splnet();
+#endif
+                ip6_auto_linklocal = ipv6mode->in6_mode;
+                if (ipv6mode->in6_mode)
+                {
+                  in6_if_up(ifp);
+                }
+                else
+                {
+                  in6_purgeif(ifp);
+                }
+                splx(s);
+              
+            return 0;
+     
+        }
+#endif
 
 #ifdef MIP6
 	switch (cmd) {
@@ -473,6 +525,12 @@ in6_control(so, cmd, data, ifp)
 	case SIOCGPRLST_IN6:
 	case SIOCGNBRINFO_IN6:
 	case SIOCGDEFIFACE_IN6:
+#ifdef BRCM_CHANGES
+        case SIOCANBRINFO_IN6:
+        case SIOCDNBRINFO_IN6:
+        case SIOCGNBRCACHEINFO_IN6:
+        case SIOCNDPFLUSH_IN6:
+#endif
 		return(nd6_ioctl(cmd, data, ifp));
 	}
 
@@ -2760,6 +2818,14 @@ in6_if_up(ifp)
 	/*
 	 * special cases, like 6to4, are handled in in6_ifattach
 	 */
+#ifdef BRCM_CHANGES
+ /*
+  * On routing interfaces ipv6 support is not required for now.
+  * Hence disabling this.
+  */
+        if((ifp->if_name!= NULL) && (strncmp(ifp->if_name, "rt",2) ==0))
+        return;
+#endif
 	in6_ifattach(ifp, NULL);
 
 	dad_delay = 0;

@@ -239,8 +239,12 @@ cyg_null_exception_handler(
                 savedreg->cause, savedreg->badvr);
 
     print_backtrace_mips(exception_number,exception_info);
-    
+#ifdef CFG_QUICKTURN
+    /* Signals will be messed in QT if reboot */
+    for(;;);
+#else /* !CFG_QUICKTURN */
     sysReboot();
+#endif /* CFG_QUICKTURN */
     
     CYG_TRACE1( 1, "Uncaught exception: %d", exception_number);
     CYG_REPORT_RETURN();

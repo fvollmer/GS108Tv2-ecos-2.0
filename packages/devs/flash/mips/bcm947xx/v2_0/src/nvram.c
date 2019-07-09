@@ -87,7 +87,7 @@ nvram_rehash(struct nvram_header *header)
 	end = (char *) header + NVRAM_SPACE - 2;
 	end[0] = end[1] = '\0';
 	for (; *name; name = value + strlen(value) + 1) {
-		if (!(eq = strchr(name, '=')))
+		if (!(eq = (char *)strchr(name, '=')))
 			break;
 		*eq = '\0';
 		value = eq + 1;

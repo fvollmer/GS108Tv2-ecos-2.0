@@ -81,7 +81,8 @@ externC code_fun flash_program_buf;
 externC code_fun flash_read_buf;
 externC code_fun flash_lock_block;
 externC code_fun flash_unlock_block;
-
+/*unsigned char temp_sector_buffer[0x40000];*/ // allocated 256K just in case .. can be reduced to 128K KRG.
+unsigned char *temp_sector_buffer;
 #if 1
 int
 flash_init(_printf *pf)
@@ -172,10 +173,19 @@ flash_erase(void *addr, int len, void **err_addr)
     typedef int code_fun(unsigned short *, unsigned int);
     code_fun *_flash_erase_block;
     int d_cache, i_cache;
+    int offset;
+    int sector_num;
+    int sector_start_address;
 
     if (!flash_info.init) {
         return FLASH_ERR_NOT_INIT;
     }
+
+    sector_num = ((int)addr-(int)flash_info.start)/flash_info.block_size;
+    sector_start_address = ((int)flash_info.start+(flash_info.block_size*sector_num));
+    offset = (((int)addr)-sector_start_address);
+
+    if((offset)||(len<flash_info.block_size)) return 0;
 
 #ifdef CYGSEM_IO_FLASH_SOFT_WRITE_PROTECT
     if (plf_flash_query_soft_wp(addr,len))
@@ -256,6 +266,12 @@ flash_program(void *_addr, void *_data, int len, void **err_addr)
     code_fun *_flash_program_buf;
     unsigned char *addr = (unsigned char *)_addr;
     unsigned char *data = (unsigned char *)_data;
+    unsigned char *tempBufPtr;
+    int offset;
+    int sector_num;
+    int sector_start_address;
+    unsigned char *temp_addr;
+
     CYG_ADDRESS tmp;
     int d_cache, i_cache;
     if (!flash_info.init) {
@@ -277,17 +293,45 @@ flash_program(void *_addr, void *_data, int len, void **err_addr)
 
     HAL_FLASH_CACHES_OFF(d_cache, i_cache);
     FLASH_Enable((unsigned short*)addr, (unsigned short *)(addr+len));
+    sector_num = ((int)addr-(int)flash_info.start)/flash_info.block_size;
+    sector_start_address = ((int)flash_info.start+(flash_info.block_size*sector_num));
+    offset = (((int)addr)-sector_start_address);
+    temp_addr = addr;
+    temp_sector_buffer = (void *)malloc(0x20000);
     while (len > 0) {
         size = len;
-        if (size > flash_info.block_size) size = flash_info.block_size;
-
+        if(offset)
+        {
+	    memcpy(temp_sector_buffer,sector_start_address,flash_info.block_size);
+            size = flash_info.block_size-offset;
+            if(len < size)
+               size = len;
+            memcpy(temp_sector_buffer+offset,data,size);
+            offset = 0;
+            tempBufPtr = &temp_sector_buffer[0];
+            temp_addr = (unsigned char*)(sector_start_address);
+        }
+        else
+        {
+           if (size >= flash_info.block_size) 
+           {
+              size = flash_info.block_size;
+              tempBufPtr = data;
+           }
+           else
+           {
+	      memcpy(temp_sector_buffer,temp_addr,flash_info.block_size);
+              memcpy(temp_sector_buffer,data,size);
+              tempBufPtr = &temp_sector_buffer[0];
+           }
+        }
         tmp = (CYG_ADDRESS)addr & ~flash_info.block_mask;
         if (tmp) {
                 tmp = flash_info.block_size - tmp;
                 if (size>tmp) size = tmp;
 
         }
-        stat = (*_flash_program_buf)(addr, data, size, 
+        stat = (*_flash_program_buf)(temp_addr, tempBufPtr, flash_info.block_size, 
                                      flash_info.block_mask, flash_info.buffer_size);
         stat = flash_hwr_map_error(stat);
 #ifdef CYGSEM_IO_FLASH_VERIFY_PROGRAM
@@ -309,12 +353,14 @@ flash_program(void *_addr, void *_data, int len, void **err_addr)
         len -= size;
         addr += size/sizeof(*addr);
         data += size/sizeof(*data);
+        temp_addr += flash_info.block_size;
     }
     FLASH_Disable((unsigned short*)addr, (unsigned short *)(addr+len));
     HAL_FLASH_CACHES_ON(d_cache, i_cache);
 #ifdef CYGSEM_IO_FLASH_CHATTER
     (*flash_info.pf)("\n");
 #endif
+    free(temp_sector_buffer);
     return (stat);
 }
 

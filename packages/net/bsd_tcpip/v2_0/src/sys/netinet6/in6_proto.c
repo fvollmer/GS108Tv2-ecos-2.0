@@ -506,6 +506,9 @@ int	ip6_sendredirects = IPV6_SENDREDIRECTS;
 int	ip6_defhlim = IPV6_DEFHLIM;
 int	ip6_defmcasthlim = IPV6_DEFAULT_MULTICAST_HOPS;
 int	ip6_accept_rtadv = 1; // was 0;	/* "IPV6FORWARDING ? 0 : 1" is dangerous */
+#ifdef BRCM_CHANGES
+int     ip6_auto_config = 0;
+#endif
 #if defined(__FreeBSD__) && __FreeBSD__ >= 4
 int	ip6_maxfragpackets;	/* initialized in frag6.c:frag6_init() */
 #else

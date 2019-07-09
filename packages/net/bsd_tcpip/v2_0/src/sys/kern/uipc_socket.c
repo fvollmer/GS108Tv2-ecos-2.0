@@ -65,6 +65,7 @@
 #include <sys/socketvar.h>
 
 #include <cyg/io/file.h>
+#include <sys/time.h>
 
 #ifdef INET
 static int	 do_setopt_accept_filter(struct socket *so, struct sockopt *sopt);
@@ -108,7 +109,7 @@ static int somaxconn = SOMAXCONN;
 struct socket *
 soalloc(int waitok)
 {
-    struct socket *so;
+    struct socket *so = NULL;
     int maxtries = waitok ? 10 : 1;
 
     while (maxtries-- > 0) {
@@ -189,7 +190,8 @@ void
 sodealloc(so)
 	struct socket *so;
 {
-
+        vm_zone_t zone;
+  
 	so->so_gencnt = ++so_gencnt;
 #ifdef INET
 	if (so->so_accf != NULL) {
@@ -202,8 +204,9 @@ sodealloc(so)
 		FREE(so->so_accf, M_ACCF);
 	}
 #endif /* INET */
-	zfreei(so->so_zone, so);
-        wakeup(so->so_zone);
+        zone = so->so_zone;
+        zfreei(zone, so);
+        wakeup(zone);
 }
 
 int
@@ -1459,7 +1462,7 @@ soopt_mcopyin(struct sockopt *sopt, struct mbuf *m)
 		} else
 			bcopy(sopt->sopt_val, mtod(m, char *), m->m_len);
 		sopt->sopt_valsize -= m->m_len;
-		(caddr_t)sopt->sopt_val += m->m_len;
+		sopt->sopt_val = (char *)sopt->sopt_val + m->m_len;
 		m = m->m_next;
 	}
 	if (m != NULL) /* should be allocated enoughly at ip6_sooptmcopyin() */
@@ -1489,7 +1492,7 @@ soopt_mcopyout(struct sockopt *sopt, struct mbuf *m)
 		} else
 			bcopy(mtod(m, char *), sopt->sopt_val, m->m_len);
 	       sopt->sopt_valsize -= m->m_len;
-	       (caddr_t)sopt->sopt_val += m->m_len;
+               sopt->sopt_val = (char *)sopt->sopt_val + m->m_len;
 	       valsize += m->m_len;
 	       m = m->m_next;
 	}

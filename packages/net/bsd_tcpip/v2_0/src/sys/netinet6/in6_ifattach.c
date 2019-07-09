@@ -941,6 +941,15 @@ in6_ifattach(ifp, altifp)
 	struct in6_addr in6;
 
 	/* some of the interfaces are inherently not IPv6 capable */
+#ifdef BRCM_CHANGES
+/*
+ * On routing interfaces ipv6 support is not required for now.
+ * Hence disabling this.
+ */
+
+        if((ifp->if_name!= NULL) && (strncmp(ifp->if_name, "rt",sizeof("rt")) ==0))
+        return;
+#endif
 	switch (ifp->if_type) {
 #ifdef IFT_BRIDGE	/* OpenBSD 2.8 */
 	case IFT_BRIDGE:

@@ -86,21 +86,8 @@ Cyg_HardwareThread::thread_entry( Cyg_Thread *thread )
 {
     CYG_REPORT_FUNCTION();
 
-    Cyg_Scheduler::scheduler.clear_need_reschedule(); // finished rescheduling
-    Cyg_Scheduler::scheduler.set_current_thread(thread); // restore current thread pointer
-
-    CYG_INSTRUMENT_THREAD(ENTER,thread,0);
-    
-#ifdef CYGSEM_KERNEL_SCHED_TIMESLICE
-    // Reset the timeslice counter so that this thread gets a full
-    // quantum. 
-    Cyg_Scheduler::reset_timeslice_count();
-#endif
-    
-    // Zero the lock
-    HAL_REORDER_BARRIER ();            // Prevent the compiler from moving
-    Cyg_Scheduler::zero_sched_lock();     // the assignment into the code above.
-    HAL_REORDER_BARRIER();
+    // Call the scheduler to do any housekeeping
+    Cyg_Scheduler::scheduler.thread_entry( thread );
 
     // Call entry point in a loop.
 
@@ -1244,6 +1231,7 @@ idle_thread_main( CYG_ADDRESS data )
 
         HAL_IDLE_THREAD_ACTION(idle_thread_loops[CYG_KERNEL_CPU_THIS()]);
 
+        CYG_ASSERT( Cyg_Scheduler::get_sched_lock() == 0, "Scheduler lock not zero" );
 #if 0
         // For testing, it is useful to be able to fake
         // clock interrupts in the idle thread.

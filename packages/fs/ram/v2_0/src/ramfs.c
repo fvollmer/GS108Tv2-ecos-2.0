@@ -567,7 +567,7 @@ static ramfs_block cyg_ramfs_block_array[CYGNUM_FS_RAM_BLOCKS_ARRAY_SIZE];
 
 #ifdef CYGPKG_FS_RAM_BLOCKS_ARRAY
 
-static void block_init()
+static void block_init(void)
 {
     int i;
     if( !__ramfs_runtime_data.initialized )

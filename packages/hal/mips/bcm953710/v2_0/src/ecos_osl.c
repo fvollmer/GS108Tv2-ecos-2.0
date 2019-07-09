@@ -188,10 +188,10 @@ osl_dma_alloc_consistent(void *dev, uint size, ulong *pap)
 {
 	void *va;
 	
-	if ((va = malloc(size)) == NULL)
+	if ((va = (void *)malloc(size)) == NULL)
 		return (NULL);
 	*pap = (ulong)CYGARC_PHYSICAL_ADDRESS(va);
-	va = CYGARC_UNCACHED_ADDRESS(va);
+	va = (void *)CYGARC_UNCACHED_ADDRESS(va);
 	return (va);
 }
 
