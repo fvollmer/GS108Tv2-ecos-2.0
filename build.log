@@ -1,0 +1,8 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++
+                                                    
+BUILDING ECOS FOR ecos-2.0--raptor FAMILY
+headers finished
+make[2]: mipsisa32-elf-gcc: Command not found
+make[2]: *** [heapgeninc.tcl] Error 127
+make[1]: *** [build] Error 2
+make: *** [ecoslib] Error 2

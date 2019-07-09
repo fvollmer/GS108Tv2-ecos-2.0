@@ -1,0 +1,30 @@
+# ====================================================================
+#
+#      logging.cdl
+#
+#      system logging mechanism
+#
+# ====================================================================
+# 
+# $Id: logging.cdl,v 1.1.2.1 Exp $
+# 
+# $Copyright: (c) 2006 Broadcom Corp.
+# All Rights Reserved.$
+# 
+# ====================================================================
+
+cdl_package CYGPKG_LOGGING {
+    display       "System logging mechanism"
+    requires      CYGPKG_KERNEL
+    requires      CYGPKG_MEMALLOC
+    requires      CYGPKG_POSIX
+    requires      CYGPKG_LIBC_STDIO
+    requires      CYGPKG_LIBC_TIME
+    include_dir   cyg/logging
+    
+    compile logging.c
+    description "
+       This package provides a generic mechanism for logging system
+       events. "
+}
+

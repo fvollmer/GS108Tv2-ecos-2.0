@@ -1,0 +1,43 @@
+$(ECOS_BUILD_DIR)/makefile : $(ECOS_REPOSITORY)/$(ECOS_CONFIG_FILE)
+	@echo "++++++++++++++++++++++++++++++++++++++++++++++++++++"
+	@echo "                                                    "
+	@echo "CONFIGURING ECOS KERNEL"
+	@echo ""
+	@rm -rf ${ECOS_BUILD_DIR} &>/dev/null
+	@mkdir -p ${ECOS_BUILD_DIR} &>/dev/null
+	@cd ${ECOS_BUILD_DIR}; \
+	$(ECOS_REPOSITORY)/tools/bin/ecosconfig --config=$(ECOS_REPOSITORY)/$(ECOS_CONFIG_FILE) --srcdir=$(ECOS_REPOSITORY)/packages --prefix=$(ECOS_INSTALL_DIR) tree
+	@echo "                                                    "
+	@echo "++++++++++++++++++++++++++++++++++++++++++++++++++++"
+
+ecoslib:
+	@echo "++++++++++++++++++++++++++++++++++++++++++++++++++++"
+	@echo "                                                    "
+	@echo "BUILDING ECOS FOR $(TARGET) FAMILY"
+	@if [[ -f $(ECOS_INSTALL_DIR)/include/dhcp.h.unused ]];then \
+	perl $(ECOS_REPOSITORY)/post_ecos_script.pl "$(ECOS_INSTALL_DIR)/include/pkgconf/ecos.mak" "-Os" "-O2" ;\
+	perl $(ECOS_REPOSITORY)/post_ecos_script.pl "$(ECOS_INSTALL_DIR)/include/network.h" "//#include <bootp.h>" "#include <bootp.h>" ;\
+	perl $(ECOS_REPOSITORY)/post_ecos_script.pl "$(ECOS_INSTALL_DIR)/include/netinet6/in6.h" "ro_dst1;" "ro_dst;" ;\
+	mv -f $(ECOS_INSTALL_DIR)/include/bootp.h.unused $(ECOS_INSTALL_DIR)/include/bootp.h ;\
+	mv -f $(ECOS_INSTALL_DIR)/include/dhcp.h.unused $(ECOS_INSTALL_DIR)/include/dhcp.h ;\
+	fi
+	@$(MAKE) $(SILENT_MODE_FLAG) -C ${ECOS_BUILD_DIR}
+	@echo "                                                    "
+	@echo "++++++++++++++++++++++++++++++++++++++++++++++++++++"
+	@echo "                                                    "
+	@echo "Doing Post Build Operations"
+	@perl $(ECOS_REPOSITORY)/post_ecos_script.pl "$(ECOS_INSTALL_DIR)/include/network.h" "#include <bootp.h>" "//#include <bootp.h>"
+	@perl $(ECOS_REPOSITORY)/post_ecos_script.pl "$(ECOS_INSTALL_DIR)/include/pkgconf/ecos.mak" "-O2" "-Os"
+	@perl $(ECOS_REPOSITORY)/post_ecos_script.pl "$(ECOS_INSTALL_DIR)/include/netinet6/in6.h" "ro_dst;" "ro_dst1;"
+	@mv -f $(ECOS_INSTALL_DIR)/include/bootp.h $(ECOS_INSTALL_DIR)/include/bootp.h.unused
+	@mv -f $(ECOS_INSTALL_DIR)/include/dhcp.h $(ECOS_INSTALL_DIR)/include/dhcp.h.unused
+	@echo "                                                    "
+	@echo "++++++++++++++++++++++++++++++++++++++++++++++++++++"
+
+clean-ecos:
+	@printf "CLEANING.....%-12s   \n"   "[$(PKGNAME)]"
+	@rm -rf $(ECOS_BUILD_DIR)
+	@rm -rf $(ECOS_INSTALL_DIR)
+
+
+

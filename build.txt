@@ -1,0 +1,29 @@
+./make_ecos_local.sh: line 8: cd: new_install: No such file or directory
+make: Entering directory `/home/TOROKI-UA/denis.garyachy/projects/lvl7/services/netgear/gs7xxT/ecos-2.0--src'
+++++++++++++++++++++++++++++++++++++++++++++++++++++
+                                                    
+BUILDING ECOS FOR ecos-2.0--raptor FAMILY
+make[1]: Entering directory `/home/TOROKI-UA/denis.garyachy/projects/lvl7/services/netgear/gs7xxT/ecos-2.0--src/output/ecos-2.0--raptor/build'
+headers finished
+make[2]: Entering directory `/home/TOROKI-UA/denis.garyachy/projects/lvl7/services/netgear/gs7xxT/ecos-2.0--src/output/ecos-2.0--raptor/build/net/common/v2_0'
+make[2]: Leaving directory `/home/TOROKI-UA/denis.garyachy/projects/lvl7/services/netgear/gs7xxT/ecos-2.0--src/output/ecos-2.0--raptor/build/net/common/v2_0'
+make[2]: Entering directory `/home/TOROKI-UA/denis.garyachy/projects/lvl7/services/netgear/gs7xxT/ecos-2.0--src/output/ecos-2.0--raptor/build/net/bsd_tcpip/v2_0'
+/home/TOROKI-UA/denis.garyachy/projects/lvl7/services/netgear/gs7xxT/ecos-2.0--src/packages/net/bsd_tcpip/v2_0/src/ecos/support.c:1047: warning: function declaration isn't a prototype
+/home/TOROKI-UA/denis.garyachy/projects/lvl7/services/netgear/gs7xxT/ecos-2.0--src/packages/net/bsd_tcpip/v2_0/src/sys/net/route.c:1183: warning: initialization from incompatible pointer type
+make[2]: Leaving directory `/home/TOROKI-UA/denis.garyachy/projects/lvl7/services/netgear/gs7xxT/ecos-2.0--src/output/ecos-2.0--raptor/build/net/bsd_tcpip/v2_0'
+make[2]: Entering directory `/home/TOROKI-UA/denis.garyachy/projects/lvl7/services/netgear/gs7xxT/ecos-2.0--src/output/ecos-2.0--raptor/build/io/eth/v2_0'
+/home/TOROKI-UA/denis.garyachy/projects/lvl7/services/netgear/gs7xxT/ecos-2.0--src/packages/io/eth/v2_0/src/net/eth_drv.c:76:5: warning: "NBPFILTER" is not defined
+In file included from /home/TOROKI-UA/denis.garyachy/projects/lvl7/services/netgear/gs7xxT/ecos-2.0--src/packages/io/eth/v2_0/src/net/eth_drv.c:88:
+/home/TOROKI-UA/denis.garyachy/projects/lvl7/services/netgear/gs7xxT/ecos-2.0--src/output/ecos-2.0--raptor/install/include/cyg/io/eth/eth_drv.h:76:5: warning: "NBPFILTER" is not defined
+/home/TOROKI-UA/denis.garyachy/projects/lvl7/services/netgear/gs7xxT/ecos-2.0--src/packages/io/eth/v2_0/src/net/eth_drv.c:672:5: warning: "NBPFILTER" is not defined
+/home/TOROKI-UA/denis.garyachy/projects/lvl7/services/netgear/gs7xxT/ecos-2.0--src/packages/io/eth/v2_0/src/net/eth_drv.c:937:5: warning: "NBPFILTER" is not defined
+make[2]: Leaving directory `/home/TOROKI-UA/denis.garyachy/projects/lvl7/services/netgear/gs7xxT/ecos-2.0--src/output/ecos-2.0--raptor/build/io/eth/v2_0'
+build finished
+make[1]: Leaving directory `/home/TOROKI-UA/denis.garyachy/projects/lvl7/services/netgear/gs7xxT/ecos-2.0--src/output/ecos-2.0--raptor/build'
+                                                    
+++++++++++++++++++++++++++++++++++++++++++++++++++++
+                                                    
+Doing Post Build Operations
+                                                    
+++++++++++++++++++++++++++++++++++++++++++++++++++++
+make: Leaving directory `/home/TOROKI-UA/denis.garyachy/projects/lvl7/services/netgear/gs7xxT/ecos-2.0--src'
