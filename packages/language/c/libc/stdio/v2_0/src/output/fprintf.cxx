@@ -79,4 +79,22 @@ fprintf( FILE *stream, const char *format, ... )
     return rc;
 } // fprintf()
 
+externC int
+tprintf( FILE *stream, const char *format, ... )
+{
+    int rc;      // return code
+    va_list ap;  // for variable args
+
+    va_start(ap, format); // init specifying last non-var arg
+
+    if (stream>stderr) {
+      rc = vfnprintf(stream, INT_MAX, format, ap);
+    }
+    rc = vfnprintf(stdout, INT_MAX, format, ap);
+
+    va_end(ap); // end var args
+
+    return rc;
+} // printf()
+  // 
 // EOF fprintf.cxx

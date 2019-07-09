@@ -232,6 +232,8 @@ externC volatile CYG_ADDRESS    hal_interrupt_objects[CYGNUM_HAL_VSR_COUNT];
 externC cyg_uint32 hal_default_isr(CYG_ADDRWORD vector, CYG_ADDRWORD data);
 // return code from ISR is passed to interrupt_end() in the kernel.
 
+externC cyg_uint32 cyg_hal_NULL_exception_handler(cyg_vector_t vector);
+
 externC void cyg_hal_exception_handler(CYG_ADDRWORD vector,
                                        CYG_ADDRWORD data,
                                        CYG_ADDRWORD stackpointer);

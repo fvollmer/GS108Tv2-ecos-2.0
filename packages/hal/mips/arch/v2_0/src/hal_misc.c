@@ -50,7 +50,7 @@
 //####DESCRIPTIONEND####
 //
 //========================================================================*/
-
+#define TRACK_INTERRUPTS 0
 #include <pkgconf/hal.h>
 
 #include <cyg/infra/cyg_type.h>         // Base types
@@ -87,6 +87,57 @@ externC HAL_SavedRegisters *_hal_registers;
 externC void* volatile __mem_fault_handler;
 
 externC cyg_uint8 cyg_hal_mips_process_fpe( HAL_SavedRegisters *regs );
+
+externC void l7_logf(cyg_uint32 severity, cyg_uint32 component, 
+                    cyg_uint8 *fileName, cyg_uint32 lineNum, cyg_uint8 *format, ...);
+externC void cyg_hal_NULL_exception_handler(cyg_uint32 irq, cyg_vector_t vector, cyg_uint32 cause, cyg_uint32 status)
+{
+  printf("\n\tJump to NULL!\n  Interrupt: 0x%08X  vector: 0x%08X  cause: 0x%08X  status: 0x%08X\n\n", irq, vector, cause, status);
+  l7_logf(2, 0, __FILE__, __LINE__, "Jump to NULL! Interrupt: 0x%08X  vector: 0x%08X  cause: 0x%08X  status: 0x%08X\n\n", irq, vector, cause, status);
+  return;
+}
+
+#if TRACK_INTERRUPTS
+#define INTERRUPT_TRACK_ARRAY_DEPTH 256
+#define INTERRUPT_TRACK_ARRAY_WIDTH 5
+cyg_uint32 cyg_hal_interrupt_track_array[INTERRUPT_TRACK_ARRAY_DEPTH][INTERRUPT_TRACK_ARRAY_WIDTH];
+externC void cyg_hal_interrupt_track(cyg_uint32 irqvec, cyg_uint32 cause, cyg_uint32 status, cyg_uint32 handler)
+{
+  static cyg_uint32 index = 0;
+  cyg_uint32 i, j;
+
+  if (index == 0) {
+    for (i=1; i<INTERRUPT_TRACK_ARRAY_DEPTH; i++) {
+      for (j=0; j<INTERRUPT_TRACK_ARRAY_WIDTH; j++) {
+        cyg_hal_interrupt_track_array[i][j] = 0xFFFFFFFF;
+      }
+    }
+    index = 1;
+    return;
+  }
+
+  for (i=0; i<index; i++) {
+    if (cyg_hal_interrupt_track_array[i][0] == irqvec) {
+      if (cyg_hal_interrupt_track_array[i][1] == cause) {
+        if (cyg_hal_interrupt_track_array[i][2] == status) {
+          if (cyg_hal_interrupt_track_array[i][3] == handler) {
+            cyg_hal_interrupt_track_array[i][4] += 1;
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  cyg_hal_interrupt_track_array[index][0] = irqvec;
+  cyg_hal_interrupt_track_array[index][1] = cause;
+  cyg_hal_interrupt_track_array[index][2] = status;
+  cyg_hal_interrupt_track_array[index][3] = handler;
+  cyg_hal_interrupt_track_array[index][4] = 1;
+  index += 1;
+  return;
+}
+#endif /* TRACK_INTERRUPTS */
 
 externC cyg_uint32 cyg_hal_exception_handler(HAL_SavedRegisters *regs)
 {

@@ -313,6 +313,7 @@ externC void pthread_cleanup_pop_inner (struct pthread_cleanup_buffer *buffer,
 
 #ifdef CYGFUN_KERNEL_THREADS_STACK_MEASUREMENT
 externC size_t pthread_measure_stack_usage (pthread_t thread);
+externC CYG_ADDRESS pthread_find_stack_base (pthread_t thread);
 #endif
 
 //-----------------------------------------------------------------------------

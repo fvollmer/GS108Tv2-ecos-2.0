@@ -52,7 +52,7 @@
 ######DESCRIPTIONEND####
 ##
 ##=============================================================================
-
+#define TRACK_INTERRUPTS 0
 #include <pkgconf/system.h>	
 #include <pkgconf/hal.h>
 
@@ -139,7 +139,7 @@ FUNC_END(debug_vector)
 FUNC_START(other_vector)
 	mfc0	k0,cause		# K0 = exception cause
 	nop
-	andi	k0,k0,0x7F		# isolate exception code
+	andi	k0,k0,0x3F		# isolate exception code
 	la	k1,hal_vsr_table	# address of VSR table
 	add	k1,k1,k0		# offset of VSR entry
 	lw	k1,0(k1)		# k1 = pointer to VSR
@@ -152,7 +152,7 @@ FUNC_END(other_vector)
 FUNC_START(utlb_vector)
 	mfc0	k0,cause		# K0 = exception cause
 	nop
-	andi	k0,k0,0x7F		# isolate exception code
+	andi	k0,k0,0x3F		# isolate exception code
 	la	k1,hal_vsr_table	# address of VSR table
 	add	k1,k1,k0		# offset of VSR entry
 	lw	k1,0(k1)		# k1 = pointer to VSR
@@ -571,13 +571,19 @@ FUNC_START(__default_interrupt_vsr)
 
 	# Decode external interrupt via interrupt controller
 
-	hal_intc_decode	s2
+	hal_intc_decode	s2, t9                              # save cause reg in t9
 
 	# Here, s2 contains the number of the interrupt being serviced,
 	# we need to derive from that the vector number to call in the ISR
 	# table.
-	
-	hal_intc_translate s2,s1
+ 
+#if TRACK_INTERRUPTS
+ # hal_intc_track is some scaffolding code used here to emulate
+ # the error of reading cause = 0	
+	hal_intc_except_cause            s2, t9
+#endif
+         
+	hal_intc_translate s2,s1,t8
 	
 	# Here s1 is the number of the vector to be called and s2 is
 	# the number of the interrupt being serviced. 
@@ -613,6 +619,39 @@ FUNC_START(__default_interrupt_vsr)
 	add	t2,t2,s1			# address of ISR ptr
 	lw	t2,0(t2)			# ISR pointer
 
+#if TRACK_INTERRUPTS         
+ la	  v1, hal_intc_except_table    
+	lw	  a0, 4(v1)
+	bnez	a0, 5f
+	nop
+         
+ sll  a0,s2, 16                    # arg0 = interrupt
+	or	  a0,a0, s1			                 # arg1 = vector
+	move	a1,t9				                    # arg2 = cause
+	move	a2,t8				                    # arg3 = INTStatus&INTMask
+	move	a3,t2				                    # handler
+ move s8, t2                       # save off  t2
+	jal  cyg_hal_interrupt_track
+ nop
+ move t2, s8
+5:
+#endif
+
+	bnez	t2, 9f			# skip if not zero
+	nop					      # (delay slot)
+
+               # jump point is zero
+	move	a0,s2				# arg0 = interrupt
+	move	a1,s1				# arg1 = vector
+	move	a2,t9				# arg2 = cause
+	move	a3,t8				# arg3 = INTStatus&INTMask
+	jal           cyg_hal_NULL_exception_handler
+ nop					      # (delay slot)
+ 
+	b    8f	      # skip normal interrupt processing if zero
+	nop					      # (delay slot)
+
+9:
 	la	a1,hal_interrupt_data		# data table
 	add	a1,a1,s1			# address of data ptr
 	lw	a1,0(a1)			# Data pointer
@@ -620,6 +659,7 @@ FUNC_START(__default_interrupt_vsr)
 	move	a0,s2				# pass interrupt number
 
 	jalr	t2				# call ISR via t2
+8: 
 	nop					# (delay slot)
 
 #ifdef CYGIMP_HAL_COMMON_INTERRUPTS_USE_INTERRUPT_STACK
@@ -782,7 +822,44 @@ restore_state:
 		
 FUNC_END(__default_interrupt_vsr)
 
+# only reason for this function is for the label
+FUNC_START(vectorNop)
+         .set noreorder
+         nop
+	        nop
+         j     ra
+	        nop
+FUNC_END(vectorNop)
+
 	hal_intc_decode_data
+#if TRACK_INTERRUPTS         
+         hal_intc_except_data
+
+##----------------------------------------------------------------------
+##
+## interruptTrack(unsigned flag);
+##       a0                        flag - '0' to stop
+##                                        'x' to start
+##
+##----------------------------------------------------------------------
+FUNC_START(interruptTrack)
+ .set noreorder
+	beqz  a0, 1f
+
+ #start
+ la	t1, hal_intc_except_table    
+	addi	t0, zero, 0x400
+	sw	t0, 0(t1)
+1:       
+ # stop         
+ la	t1, hal_intc_except_table    
+	addi	t0, zero, 1
+	sw	t0, 4(t1)
+
+ j     ra
+ nop
+FUNC_END(interruptTrack)
+#endif
 
 ##-----------------------------------------------------------------------------
 ## Execute pending DSRs on the interrupt stack with interrupts enabled.
@@ -818,6 +895,44 @@ FUNC_START(hal_interrupt_stack_call_pending_DSRs)
 	
 FUNC_END(hal_interrupt_stack_call_pending_DSRs)	
 #endif		
+
+#if TRACK_INTERRUPTS
+##----------------------------------------------------------------------
+##
+## readIntStatus/Mask();
+##
+## Results:
+##      None.
+##
+##----------------------------------------------------------------
+FUNC_START(readIntStatusMask)
+  # AND CPU core INTSTATUS and INTMASK[0]
+  li      v1, 0xb8003010
+  nop				                          # delay slot
+  lw      t3, 0(v1)
+  nop				                          # delay slot
+  lw      t4, 4(v1)
+  
+  mfc0	   t5,status		              # get status register (interrupt m
+  nop				                          # delay slot
+  nop				                          # delay slot
+  mfc0	   t2,cause		               # get cause register
+  nop				                          # delay slot
+  nop				                          # delay slot
+  
+  mfc0	   t4,ecc
+  nop				                          # delay slot
+  nop				                          # delay slot
+    
+  sw      t3, 0(a0)
+  sw      t4, 4(a0)
+  sw      t2, 8(a0)
+  sw      t5, 12(a0)
+  j       ra
+  nop
+  nop
+FUNC_END(readIntStatusMask)
+#endif
 
 ##-----------------------------------------------------------------------------
 ## Short circuit in case any code tries to use "__gccmain()"

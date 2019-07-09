@@ -56,7 +56,7 @@
 ######DESCRIPTIONEND####
 ##
 ##=============================================================================
-
+#define TRACK_INTERRUPTS 0
 #include <cyg/hal/mips.inc>
 	
 #include <cyg/hal/variant.inc>
@@ -340,27 +340,38 @@
 #endif
 
 #ifndef CYGPKG_HAL_MIPS_INTC_DECODE_DEFINED
-	.macro	hal_intc_decode vnum
+	.macro	hal_intc_decode vnum creg
 	mfc0	v1,status		# get status register (interrupt mask)
 	nop				# delay slot
 	mfc0	v0,cause		# get cause register
 	nop				# delay slot
+        move    t0, v0                  # save away cause reg
 	and	v0,v0,v1		# apply interrupt mask
 	srl	v0,v0,10		# shift interrupt bits down
 	andi	v0,v0,0x7f		# isolate 6 interrupt bits
 	la	v1,hal_intc_translation_table
 	add	v0,v0,v1		# index into table
 	lb	\vnum,0(v0)		# pick up vector number
+        move    \creg, t0
 	.endm
 #endif
 
 #ifndef CYGPKG_HAL_MIPS_INTC_TRANSLATE_DEFINED
 #ifdef CYGIMP_HAL_COMMON_INTERRUPTS_CHAIN
-	.macro	hal_intc_translate inum,vnum
+        .macro  hal_intc_translate inum,vnum,ists
 	move	\vnum,zero			# Just vector zero is supported
 	.endm
 #else			
-	.macro	hal_intc_translate inum,vnum
+        .macro  hal_intc_translate inum,vnum,ists
+        
+        # AND CPU core INTSTATUS and INTMASK[0]
+        li      v0, 0xb8003010
+        lw      v1, 0(v0)
+        li      v0, 0xb8003014
+        lw      a1, 0(v0)
+        and     v1, v1, a1
+        move    \ists, v1
+    
 	move	\vnum,\inum			# Vector == interrupt number
 	.endm
 #endif
@@ -386,6 +397,46 @@ hal_intc_translation_table:
 	.byte	2, 0, 1, 0
 	.endm
 #endif
+
+#if TRACK_INTERRUPTS
+#--------------------------------------------------------------
+#  
+# Define hal_intc_except_cause 
+#
+#----------------------------------------------------------------------
+        .macro  hal_intc_except_cause vnum creg
+        la	v1, hal_intc_except_table    
+	lw	a0, 0(v1)
+	addi	a0, a0, -1
+	sw	a0, 0(v1)
+	bnez	a0, 4f
+	nop
+	sw	zero, 4(v1)
+
+# from here, emulate status =0, cause = 0        
+        move    v0, zero
+        move    v1, zero
+        move    t0, v0                  # save away cause reg
+	and	v0,v0,v1		# apply interrupt mask
+	srl	v0,v0,10		# shift interrupt bits down
+	andi	v0,v0,0x3f		# isolate 6 interrupt bits
+	la	v1,hal_intc_translation_table
+	add	v0,v0,v1		# index into table
+	lb	\vnum,0(v0)		# pick up vector number
+        move    \creg, t0
+4:
+        nop        
+        .endm
+
+	.macro	hal_intc_except_data
+hal_intc_except_table:
+        .word   0x00000000
+        .word   0x00000001
+        .word   0xCC33CC33
+        .word   0xDD22DD22
+	.endm
+        
+#endif /* TRACK_INTERRUPTS */
 
 #------------------------------------------------------------------------------
 # Register save and restore macros. These expect a pointer to a CPU save state

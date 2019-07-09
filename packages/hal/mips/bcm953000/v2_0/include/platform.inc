@@ -195,7 +195,7 @@
 #----------------------------------------------------------------------
 #ifndef CYGPKG_HAL_MIPS_INTC_TRANSLATE_DEFINED
 
-    .macro  hal_intc_translate inum,vnum
+    .macro  hal_intc_translate inum,vnum,ists
     
     #
     # TODO: flexible assignment
@@ -212,6 +212,7 @@
     li      v0, 0xb8003014
     lw      a1, 0(v0)
     and     v1, v1, a1
+    move    \ists, v1
     
     # Check which core asserts interrupt
     li      a0, 6             

@@ -52,6 +52,8 @@
 //==========================================================================
 
 #include <stdio.h>
+#include <fcntl.h>
+#include <network.h>
 #include <pkgconf/kernel.h>
 
 #include <cyg/kernel/ktypes.h>         // base kernel types
@@ -73,12 +75,83 @@
 externC void sysReboot(void);
 static int already_called;
 
+/* define CRASH_LOG_FILE as 1 to enable writing crash dump to file */
+#define CRASH_LOG_FILE 1
+externC void osapiFsSync(void);
+externC int tprintf( FILE *stream, const char *format, ... );
+
 #define EXTRA_BACKTRACE_DETAIL
 
+#define FRAME_DEPTH   256
+#define LINE_LEN        4
+#define ISPRINT(c) ((' '<=(c))&&((c)<= '~'))
+void dumpMemory(FILE *fp, unsigned long *addr, int size)
+{
+  int i, j, k, m;
+  unsigned long *searchAddr;
+  unsigned long value;
+  unsigned long temp = (unsigned long)addr;
+  char lBuff[80], chr;
+
+  if ((size <= 0) || (size > FRAME_DEPTH)){
+    size = FRAME_DEPTH;
+  }
+
+  value = 0xFFFFFFFC;
+  j = LINE_LEN>>1;
+  while (j) {
+    value <<= 1;
+    value &= 0xFFFFFFFE;
+    j >>= 1;
+  }
+
+  temp &= value;
+  searchAddr = (unsigned long *)temp;
+
+  for(i=0;i<((size+LINE_LEN-1)/LINE_LEN);i++) 
+  {
+    tprintf(fp, "%08lX:  ", (unsigned long)searchAddr);
+    m = 0;
+    for(j=0;j<LINE_LEN;j++) 
+    {
+      if (j == (LINE_LEN/2)) 
+      {
+        tprintf(fp, " ");
+        lBuff[m++] = ' ';        
+      }
+      value = *searchAddr;
+      if (((unsigned long)searchAddr >= (unsigned long)addr) &&
+          ((unsigned long)searchAddr < ((unsigned long)addr+(size*4))))
+      {
+        tprintf(fp, "%08lX ", value);
+        for(k=0;k<4;k++) 
+        {
+          chr = (char)((value>>((3-k)*8)) & 0x000000FF);
+          lBuff[m++] = ISPRINT(chr)?chr:'.';        
+        }
+      }
+      else
+      {
+        tprintf(fp, "         ");
+        for(k=0;k<4;k++) 
+        {
+          lBuff[m++] = '.';        
+        }
+      }
+      searchAddr++;
+    }
+    lBuff[m] = '\0';
+    tprintf(fp, "   %s\n", lBuff);
+  }
+  tprintf(fp, "\n\n");
+}
+
+/*************************************************************************************/
+externC volatile CYG_ADDRESS    vectorNop[256];       /* used for HAL Translation table */
 static void print_backtrace_mips(cyg_code exception_number,CYG_ADDRWORD exception_info)
 {
   unsigned long trace_depth, cur_depth;
-  unsigned long *cur_sp;
+  unsigned long *cur_sp, *ra;
   HAL_SavedRegisters *ss;
   unsigned int cur_frame_size, cur_ra_offset, cur_epilog_frame_size;
   volatile unsigned long *code_search_point;
@@ -91,21 +164,48 @@ static void print_backtrace_mips(cyg_code exception_number,CYG_ADDRWORD exceptio
     return;
   }
   
+  FILE  *fp = NULL;
+#if CRASH_LOG_FILE
+  if ((fp = fopen("except.txt","w")) == NULL)
+  {
+    printf("Cannot open exception file.\n\n");
+  }
+#endif
+  
   already_called =1;
 
-  trace_depth = 0x0fffffffUL; /*trace as far as we can*/
+  trace_depth = 0x10UL; /*trace as far as we can*/
 
   ss = (HAL_SavedRegisters *)exception_info;
   cur_sp = (unsigned long *) ((unsigned long) (ss->d[29]));
-  printf("Stack pointer before signal: 0x%08lX\n", (unsigned long)cur_sp);
-  printf("Offending instruction at address 0x%08lX\n", (unsigned long)ss->pc);
-  printf("tried to access address 0x%08lX\n", ss->badvr);
-  printf("CPU's exception-cause code: 0x%08lX\n", ss->cause);
+  ra = (unsigned long *) ((unsigned long) (ss->d[31]));
+  tprintf(fp, "Stack pointer before signal: 0x%08lX\n", (unsigned long)cur_sp);
+  tprintf(fp, "Offending instruction at address 0x%08lX\n", (unsigned long)ss->pc);
+  tprintf(fp, "tried to access address 0x%08lX\n", ss->badvr);
+  tprintf(fp, "CPU's exception-cause code: 0x%08lX\n", ss->cause);
 
   code_search_point = (unsigned long *)((unsigned long)ss->pc);
+  if ((code_search_point == NULL) || 
+      ((code_search_point < (unsigned long *)(0x80041000)) &&
+       (code_search_point > (unsigned long *)(0x81000000))))
+  {
+    /* printf("\n EPC is NULL POINTER and changing to RA.\n"); */
+    code_search_point = (unsigned long *) ra;
+  }
+
+  tprintf(fp, "\nHAL Translation table:\n");
+  dumpMemory(fp, (unsigned long *)vectorNop, 64);
+  tprintf(fp, "\nInterrupt vector table:\n");
+  dumpMemory(fp, (unsigned long *)hal_interrupt_handlers, 64);
+  tprintf(fp, "\nRaw stack frame dump:\n");
+  dumpMemory(fp, (unsigned long *)cur_sp-(FRAME_DEPTH/4), FRAME_DEPTH/4);
+  tprintf(fp, "\n");
+  dumpMemory(fp, (unsigned long *)cur_sp, FRAME_DEPTH);
+
   cur_depth = 0;
-  while (trace_depth > cur_depth) {    
-    printf("----------------------Stack Depth %lu\n", cur_depth);
+  while (trace_depth > cur_depth)
+  {    
+    tprintf(fp, "---------------------- Stack Depth %lu ------------------------\n", cur_depth);
     /* Figure out from the code how large the stack frame is, and 
        where the return-address register R31 is stored */
     cur_frame_size = 0;
@@ -114,7 +214,13 @@ static void print_backtrace_mips(cyg_code exception_number,CYG_ADDRWORD exceptio
 			     go off into the weeds */
     cur_epilog_frame_size = 0;
     while (((cur_frame_size == 0) || (cur_ra_offset == 0)) && 
-	   (num_inst_scanned < 100000)) {
+           (num_inst_scanned < 100000))
+    {
+      if (code_search_point == (unsigned long *)0)
+      {
+        tprintf(fp, "\n NULL POINTER is encountred return.\n");
+        goto print_backtrace_mips_exit;
+      }
       cur_inst = *code_search_point;
       num_inst_scanned++;
       op = (cur_inst & 0xFC000000UL)>>26;
@@ -128,87 +234,111 @@ static void print_backtrace_mips(cyg_code exception_number,CYG_ADDRWORD exceptio
 	  (op == 5) || (cur_inst == 0) /* noop */ ||
 	  ((cur_inst & 0xF81FFFFF) == 8) /* jr */ || 
 	  ((cur_inst & 0xFC00003F) == 0xC) /* syscall */ || 
-	  ((cur_inst & 0xF800FFF8) == 0x0018) /* mult/div */ ) {
+          ((cur_inst & 0xF800FFF8) == 0x0018) /* mult/div */ )
+      {
 	code_search_point--;
 	continue;
       }
       /* Which register stores the result of this instruction? */
-      if (op == 0) {
+      if (op == 0)
+      {
 	dest_reg = r3;
-      } else if (op == 0x2B) { /* sw */
+      } 
+      else if (op == 0x2B)
+      { /* sw */
 	dest_reg = 0;
-      } else {
+      }
+      else
+      {
 	dest_reg = r2;
       }
-      if ((op == 0x2B) && (r1 == 29)) {
+      if ((op == 0x2B) && (r1 == 29))
+      {
 	/* sw {r2}, {immed}(sp) */
-	if (r2 == 31) { /* ra */
-	  if ((immed & 0x8000UL) != 0) {
-	    printf("At code addr 0x%08lX found code 0x%08lX that stores\n", 
+        if (r2 == 31) 
+        { /* ra */
+          if ((immed & 0x8000UL) != 0)
+          {
+            tprintf(fp, "At code addr 0x%08lX found code 0x%08lX that stores\n", 
 		     (unsigned long)code_search_point, cur_inst);
-	    printf("RA at negative offset to SP. Giving up.\n");
-	    return;
-	  }
+            tprintf(fp, "RA at negative offset to SP. Giving up.\n");
+            goto print_backtrace_mips_exit;
+          }
 	  cur_ra_offset = immed;
 	}
-      } else if ((cur_inst & 0xFBFF0000UL) == 0x23BD0000UL) {
+      }
+      else if ((cur_inst & 0xFBFF0000UL) == 0x23BD0000UL) 
+      {
 	/* addi/addiu sp,sp,{immed} */
-	if ((immed & 0x8000UL) == 0) {
+        if ((immed & 0x8000UL) == 0) 
+        {
 	  /* Positive offset - this is either the epilog code at the end of 
 	     the previous function, or this function has some nonlinear 
 	     control flow with the pop and return in the middle. For the 
 	     latter case, we'll only see one epilog, of the same size as 
 	     the prolog. */	  
-	  if (cur_epilog_frame_size == 0) {
+          if (cur_epilog_frame_size == 0)
+          {
 	    cur_epilog_frame_size = immed;
-	  } else {
-	    printf("At code addr 0x%08lX found function epilog code 0x%08lX\n", 
+          }
+          else
+          {
+            tprintf(fp, "At code addr 0x%08lX found function epilog code 0x%08lX\n", 
 		   (unsigned long)code_search_point, cur_inst);
-	    printf("but had not yet found prolog code. Giving up.\n");
-	    printf("This might mean I hit the top of stack.\n");
-	    return;
-	  }
-	} else {
+            tprintf(fp, "but had not yet found prolog code. Giving up.\n");
+            tprintf(fp, "This might mean I hit the top of stack.\n");
+            goto print_backtrace_mips_exit;
+          }
+        }
+        else
+        {
 	  cur_frame_size = (((~immed) & 0xFFFFUL)+1); /* -immed */
 	  if ((cur_epilog_frame_size != 0) && 
-	      (cur_epilog_frame_size != cur_frame_size)) {
-	    printf("Found prolog at code addr 0x%08lX, but had seen epilog of different frame size %d on the way. Giving up.\n", (unsigned long)code_search_point, cur_epilog_frame_size);
-	    return;
-	  }
-	}
-      } else if ((dest_reg == 29) && (cur_frame_size == 0)) {
-	        printf("At code addr 0x%08lX the code 0x%08lX alters SP, \n", 
+              (cur_epilog_frame_size != cur_frame_size))
+          {
+            tprintf(fp, "Found prolog at code addr 0x%08lX, but had seen epilog of different frame size %d on the way. Giving up.\n", (unsigned long)code_search_point, cur_epilog_frame_size);
+            goto print_backtrace_mips_exit;
+          }
+        }
+      }
+      else if ((dest_reg == 29) && (cur_frame_size == 0))
+      {
+        tprintf(fp, "At code addr 0x%08lX the code 0x%08lX alters SP, \n", 
 		      (unsigned long)code_search_point, cur_inst);
-	        printf("but had not yet found frame size. Giving up.\n");
-	return;
+        tprintf(fp, "but had not yet found frame size. Giving up.\n");
+        goto print_backtrace_mips_exit;
       } 
       code_search_point--;
     } /* End while looking for ra_offset and frame_size */
-       printf("Current frame at 0x%08lX, size %d bytes, retaddr offset %d bytes\n",
+
+    tprintf(fp, "Current frame at 0x%08lX, size %d bytes, retaddr offset %d bytes\n",
 	     (unsigned long)cur_sp, cur_frame_size, cur_ra_offset);
        code_search_point = (unsigned long *)(*(cur_sp + (cur_ra_offset / 4)));
-       printf("Return address: 0x%08lX\n\n", (unsigned long)code_search_point); 
+    tprintf(fp, "Return address: 0x%08lX\n\n", (unsigned long)code_search_point); 
 
 #ifdef EXTRA_BACKTRACE_DETAIL
-  printf("Stack frame dump:\n");
-  cur_frame_addr = (unsigned long *)cur_sp;
-  for(i=0;i<(cur_frame_size/4);i++) {
-    if (i%6 == 0) {
-      printf("\n%08lX: ", (unsigned long)cur_frame_addr);
-    }
-    printf("%08lX ", *cur_frame_addr);
-    cur_frame_addr++;
-  }
-  printf("\n");
+    tprintf(fp, "Stack frame dump:\n");
+    dumpMemory(fp, (unsigned long *)cur_sp, cur_frame_size/4);
 #endif
-    if (((((unsigned long)code_search_point) & 0xF0000000UL) > 0x20000000UL) || 
-    (code_search_point == 0)) {
-      printf("That return address doesn't look like userspace code-space. continue anyway.\n");
+    if (((((unsigned long)code_search_point) & 0xF0000000UL) < 0x80000000UL) || 
+        ((((unsigned long)code_search_point) & 0xF0000000UL) > 0x80400000UL) || 
+        (code_search_point == 0))
+    {
+      tprintf(fp, "\nThat return address doesn't look like userspace code-space. continue anyway.\n");
+      break;
     } 
     cur_sp += (cur_frame_size / 4);
     cur_depth++;
-    printf("\n");
+    tprintf(fp, "\n");
   } /* end while (trace_depth > cur_depth) */
+
+print_backtrace_mips_exit:
+#if CRASH_LOG_FILE
+  fflush(fp);
+  fclose(fp);
+  osapiFsSync();
+#endif
+  return;
 }
 
 // -------------------------------------------------------------------------
@@ -223,7 +353,7 @@ cyg_null_exception_handler(
     )
 {
     HAL_SavedRegisters *savedreg;
-    CYG_HAL_MIPS_REG sp;
+    CYG_HAL_MIPS_REG sp, ra;
     void *sh;
     
     CYG_REPORT_FUNCTION();
@@ -233,18 +363,15 @@ cyg_null_exception_handler(
     savedreg = (HAL_SavedRegisters *)exception_info;
 
     sp=(CYG_HAL_MIPS_REG)(savedreg->d[29]);
-    
-    diag_printf("\n**Exception %d: SP=%08X EPC=%08X, Cause=%08X VAddr=%08X\n",
-                exception_number, sp, savedreg->pc, 
+    ra = (CYG_HAL_MIPS_REG)(savedreg->d[31]);
+ 
+    diag_printf("\n**Exception %d: SP=%08X, RA=%08X, EPC=%08X, Cause=%08X VAddr=%08X\n",
+                exception_number, sp, ra, savedreg->pc,
                 savedreg->cause, savedreg->badvr);
 
     print_backtrace_mips(exception_number,exception_info);
-#ifdef CFG_QUICKTURN
-    /* Signals will be messed in QT if reboot */
-    for(;;);
-#else /* !CFG_QUICKTURN */
+    
     sysReboot();
-#endif /* CFG_QUICKTURN */
     
     CYG_TRACE1( 1, "Uncaught exception: %d", exception_number);
     CYG_REPORT_RETURN();

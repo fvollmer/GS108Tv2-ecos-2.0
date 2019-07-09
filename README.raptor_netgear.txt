@@ -21,6 +21,9 @@ COMPILATION procedure:
 
 "bsp/cpu/raptor/ecos/ecos-libs/" instead of "bsp/platform/broadcom/<platform>/ecos-libs/"
 
-
+TRY LINKS INSTEAD!!!
+cd bsp/cpu/raptor/ecos/ecos-libs
+ln -s  ../../../../../tools/build_kernels/ecos-2.0--src/output/ecos-2.0--raptor_netgear/install/include include
+ln -s  ../../../../../tools/build_kernels/ecos-2.0--src/output/ecos-2.0--raptor_netgear/install/lib lib
 
 

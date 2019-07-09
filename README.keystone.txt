@@ -17,9 +17,15 @@ COMPILATION procedure:
 4)Copy the ecos libs (i.e include/ libs/ directories) from "output/ecos-2.0--keystone/install" to
 "bsp/cpu/keystone/ecos/ecos-libs/" instead of "bsp/platform/broadcom/<platform>/ecos-libs/"
 
+TRY LINKS INSTEAD!!!
+cd bsp/cpu/keystone/ecos/ecos-libs
+ln -s  ../../../../../tools/build_kernels/ecos-2.0--src/output/ecos-2.0--keystone/install/include include
+ln -s  ../../../../../tools/build_kernels/ecos-2.0--src/output/ecos-2.0--keystone/install/lib lib
+
 NOTE: 
  
-Ensure that the following part of the code should be commented in generated header file at “include\cyg\hal\bcmnvram.h” in order to avoid compilation errors.
+Ensure that the following part of the code should be commented in generated header file at 
+“include\cyg\hal\bcmnvram.h” in order to avoid compilation errors.
  
 #if 0
 /*

@@ -582,12 +582,19 @@ externC int pthread_create ( pthread_t *thread,
     static char *name_template = "pthread.00000000";
     pthread_t id = nthread->id;
     
-    for( int i = 0; name_template[i]; i++ ) name[i] = name_template[i];
+    for( int i = 0; name_template[i]; i++ ) 
+    {
+      name[i] = name_template[i];
+      name[i+1] = 0;
+    }
 
     // dump the id, in hex into the name.
     for( int i = 15; i >= 8; i-- )
     {
-        name[i] = "0123456789ABCDEF"[id&0xF];
+        if ((id&0xF) > 9)
+          name[i] = (id&0xF) + 'A' - 9;
+        else 
+          name[i] = (id&0xF) + '0';
         id >>= 4;
     }
 
@@ -1637,6 +1644,17 @@ externC size_t pthread_measure_stack_usage (pthread_t thread)
       return (size_t)-1;
 
     return (size_t)th->thread->measure_stack_usage();
+}
+
+
+externC CYG_ADDRESS pthread_find_stack_base (pthread_t thread)
+{
+    pthread_info *th = pthread_info_id(thread);
+
+    if ( NULL == th )
+      return (size_t)-1;
+
+    return th->thread->get_stack_base();
 }
 #endif
 
