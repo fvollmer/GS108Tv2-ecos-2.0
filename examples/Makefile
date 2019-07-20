@@ -20,7 +20,8 @@ LDFLAGS       = -nostartfiles -L$(INSTALL_DIR)/lib -Ttarget.ld
 
 .PHONY: all clean
 
-all: hello twothreads simple-alarm serial
+#all: hello twothreads simple-alarm serial
+all: hello
 
 clean:
 	-rm -f hello hello.o twothreads twothreads.o
@@ -42,14 +43,14 @@ clean:
 hello: hello.o
 	$(XLD) $(LDFLAGS) $(ECOS_GLOBAL_LDFLAGS) -o $@ $@.o
 
-twothreads: twothreads.o
-	$(XLD) $(LDFLAGS) $(ECOS_GLOBAL_LDFLAGS) -o $@ $@.o
+#twothreads: twothreads.o
+#	$(XLD) $(LDFLAGS) $(ECOS_GLOBAL_LDFLAGS) -o $@ $@.o
 
-simple-alarm: simple-alarm.o
-	$(XLD) $(LDFLAGS) $(ECOS_GLOBAL_LDFLAGS) -o $@ $@.o
+#simple-alarm: simple-alarm.o
+#	$(XLD) $(LDFLAGS) $(ECOS_GLOBAL_LDFLAGS) -o $@ $@.o
 
-serial: serial.o
-	$(XLD) $(LDFLAGS) $(ECOS_GLOBAL_LDFLAGS) -o $@ $@.o
+#serial: serial.o
+#	$(XLD) $(LDFLAGS) $(ECOS_GLOBAL_LDFLAGS) -o $@ $@.o
 
-instrument-test: instrument-test.o
-	$(XLD) $(LDFLAGS) $(ECOS_GLOBAL_LDFLAGS) -o $@ $@.o
+#instrument-test: instrument-test.o
+#	$(XLD) $(LDFLAGS) $(ECOS_GLOBAL_LDFLAGS) -o $@ $@.o
