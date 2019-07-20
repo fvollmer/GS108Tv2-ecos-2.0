@@ -93,7 +93,7 @@ externC void l7_logf(cyg_uint32 severity, cyg_uint32 component,
 externC void cyg_hal_NULL_exception_handler(cyg_uint32 irq, cyg_vector_t vector, cyg_uint32 cause, cyg_uint32 status)
 {
   printf("\n\tJump to NULL!\n  Interrupt: 0x%08X  vector: 0x%08X  cause: 0x%08X  status: 0x%08X\n\n", irq, vector, cause, status);
-  l7_logf(2, 0, __FILE__, __LINE__, "Jump to NULL! Interrupt: 0x%08X  vector: 0x%08X  cause: 0x%08X  status: 0x%08X\n\n", irq, vector, cause, status);
+  //l7_logf(2, 0, __FILE__, __LINE__, "Jump to NULL! Interrupt: 0x%08X  vector: 0x%08X  cause: 0x%08X  status: 0x%08X\n\n", irq, vector, cause, status);
   return;
 }
 

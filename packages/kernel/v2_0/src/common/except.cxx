@@ -336,7 +336,7 @@ print_backtrace_mips_exit:
 #if CRASH_LOG_FILE
   fflush(fp);
   fclose(fp);
-  osapiFsSync();
+  //osapiFsSync();
 #endif
   return;
 }
