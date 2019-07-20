@@ -3,8 +3,8 @@ $(ECOS_BUILD_DIR)/makefile : $(ECOS_REPOSITORY)/$(ECOS_CONFIG_FILE)
 	@echo "                                                    "
 	@echo "CONFIGURING ECOS KERNEL"
 	@echo ""
-	@rm -rf ${ECOS_BUILD_DIR} &>/dev/null
-	@mkdir -p ${ECOS_BUILD_DIR} &>/dev/null
+	@rm -rf ${ECOS_BUILD_DIR}
+	@mkdir -p ${ECOS_BUILD_DIR}
 	@cd ${ECOS_BUILD_DIR}; \
 	$(ECOS_REPOSITORY)/tools/bin/ecosconfig --config=$(ECOS_REPOSITORY)/$(ECOS_CONFIG_FILE) --srcdir=$(ECOS_REPOSITORY)/packages --prefix=$(ECOS_INSTALL_DIR) tree
 	@echo "                                                    "
@@ -14,7 +14,7 @@ ecoslib:
 	@echo "++++++++++++++++++++++++++++++++++++++++++++++++++++"
 	@echo "                                                    "
 	@echo "BUILDING ECOS FOR $(TARGET) FAMILY"
-	@if [[ -f $(ECOS_INSTALL_DIR)/include/dhcp.h.unused ]];then \
+	@if [ -f $(ECOS_INSTALL_DIR)/include/dhcp.h.unused ];then \
 	perl $(ECOS_REPOSITORY)/post_ecos_script.pl "$(ECOS_INSTALL_DIR)/include/pkgconf/ecos.mak" "-Os" "-O2" ;\
 	perl $(ECOS_REPOSITORY)/post_ecos_script.pl "$(ECOS_INSTALL_DIR)/include/network.h" "//#include <bootp.h>" "#include <bootp.h>" ;\
 	perl $(ECOS_REPOSITORY)/post_ecos_script.pl "$(ECOS_INSTALL_DIR)/include/netinet6/in6.h" "ro_dst1;" "ro_dst;" ;\
