@@ -2,28 +2,26 @@
 
 COMPILATION procedure:
 
-[ecos-2.0--src]$ chmod 0777 mips_raptor_netgear.ecc
 
-1)Export the Tool chain path as below.
+1) Get toolchain: 
+
+wget http://mirrors.kernel.org/sources.redhat.com/ecos/gnutools/i386linux/ecoscentric-gnutools-mipsisa32-elf-1.4-2.i386linux.tar.bz2
+
+2) Extract toolchain:
+
+tar -xvjf ecoscentric-gnutools-mipsisa32-elf-1.4-2.i386linux.tar.bz2
+
+3) Add to toolchain to path
  
-[ecos-2.0--src]$ export PATH=$PATH:/tools/ecos/mipsisa32-elf/bin/
+export PATH=$PATH:/path/to/gnutools/mipsisa32-elf/bin/
  
-2)Remove the previously generated header files & lib files , if any
+4) Compile with appropriate CPU option
 
-[ecos-2.0--src]$ rm -r output/ecos-2.0--raptor_netgear/
+[GS108Tv2-ecos-2.0]$ make L7_CPU=raptor_netgear
 
-3)Compile with appropriate CPU option
+5) Build your application. For example:
 
-[ecos-2.0--src]$ make L7_CPU=raptor_netgear
+[GS108Tv2-ecos-2.0]$ cd examples/
+[GS108Tv2-ecos-2.0/examples]$ make INSTALL_DIR=/path/to/GS108Tv2-ecos-2.0/output/ecos-2.0--raptor_netgear/install
 
-
-4)Copy the ecos libs (i.e include/ libs/ directories) from "output/ecos-2.0--raptor_netgear/install" to 
-
-"bsp/cpu/raptor/ecos/ecos-libs/" instead of "bsp/platform/broadcom/<platform>/ecos-libs/"
-
-TRY LINKS INSTEAD!!!
-cd bsp/cpu/raptor/ecos/ecos-libs
-ln -s  ../../../../../tools/build_kernels/ecos-2.0--src/output/ecos-2.0--raptor_netgear/install/include include
-ln -s  ../../../../../tools/build_kernels/ecos-2.0--src/output/ecos-2.0--raptor_netgear/install/lib lib
-
-
+This created a file "hello", that you can now boot
